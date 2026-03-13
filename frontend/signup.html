@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up | DIFFERENT IDEA</title>
+    <link rel="stylesheet" href="login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="brand-panel">
+            <div class="brand-content">
+                <h1>DIFFERENT IDEA</h1>
+                <p>Begin your personalized learning journey today.</p>
+            </div>
+        </div>
+
+        <div class="form-panel">
+            <div class="form-wrapper">
+                <h2>Create Account</h2>
+                <p class="subtitle">Sign up to track your progress.</p>
+
+                <form id="signup-form">
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" id="su-username" placeholder="Choose a username" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="su-email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="su-password" placeholder="Create a password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Sign Up</button>
+                </form>
+
+                <div class="divider"><span>or</span></div>
+
+                <a href="login.html" class="btn btn-outline btn-full">I already have an account</a>
+                <br>
+                <a href="index.html" class="btn btn-outline btn-full" style="background:#f5f5f5; color:#666; border-color:#ddd;">Continue as Guest</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const getApiUrl = () => {
+    // 1. Local VS Code Development
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+        return "http://127.0.0.1:5000";
+    }
+
+    // 2. GitHub Codespaces Logic
+    // Codespaces creates URLs like: https://verbose-space-xyx-5500.app.github.dev
+    // We need to swap the port number in the subdomain.
+    if (window.location.hostname.includes('app.github.dev')) {
+        // Replace the port part of the subdomain (e.g., -5500) with the backend port (-5000)
+        // This assumes your frontend is running on a different port than 5000 (like Live Server on 5500)
+        let host = window.location.hostname;
+        
+        // If running Live Server (port 5500), it will have -5500 in the URL.
+        // We replace -5500 (or any port) with -5000.
+        // Note: This regex handles the specific format of Codespaces URLs.
+        return `https://${host.replace(/-\d+/, '-5000')}`; 
+    }
+
+    // 3. Fallback (if deployed normally)
+    return window.location.origin;
+};
+const API_URL = getApiUrl();
+        
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('su-username').value;
+            const email = document.getElementById('su-email').value;
+            const password = document.getElementById('su-password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/api/signup`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    alert(data.message + " Please login now.");
+                    window.location.href = "login.html";
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert("Could not connect to server.");
+            }
+        });
+    </script>
+</body>
+</html>
