@@ -74,6 +74,9 @@
                     📷 Upload Image (OCR)
                     <input type="file" id="img-input" accept="image/*" hidden onchange="handleFileUpload(this)">
                 </label>
+                <button class="upload-btn" id="dictate-btn" onclick="toggleDictation()" title="Speech to Text">
+                    🎤 Speech to Text
+                </button>
             </div>
 
             <textarea id="user-input" placeholder="Paste text here..."></textarea>
