@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroVikas | Neuro-Adaptive Learning</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lexend:wght@400;500&family=Playfair+Display:wght@700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -52,10 +52,10 @@
         </div>
     </nav>
 
-    <!-- Main Content Area (Shifted Left) -->
+    <!-- Main Content Area -->
     <main class="content-area" id="content-area">
-        
-        <!-- Focus Mask Overlays (Top, Bottom dark slabs, and bright ruler) -->
+
+        <!-- Focus Mask Overlays -->
         <div class="focus-mask-top" id="focus-mask-top"></div>
         <div class="focus-mask-ruler" id="focus-mask-ruler"></div>
         <div class="focus-mask-bottom" id="focus-mask-bottom"></div>
@@ -67,10 +67,11 @@
 
         <!-- INPUT VIEW -->
         <section class="input-view" id="input-view">
-            <h1>Transform Your Content</h1>
-            <p>Paste text or upload a file (PDF/Image) to begin.</p>
-            
-            <!-- Upload Buttons -->
+            <div class="input-view-header">
+                <h1>Transform Your Content</h1>
+                <p>Paste text or upload a file (PDF/Image) to begin.</p>
+            </div>
+
             <div class="upload-section">
                 <label class="upload-btn" title="Max file size: 16MB">
                     📄 Upload PDF
@@ -86,9 +87,9 @@
             </div>
 
             <textarea id="user-input" placeholder="Paste text here..."></textarea>
-            
+
             <div class="input-actions">
-                <button class="btn btn-primary" onclick="processText()">Adapt & Transform</button>
+                <button class="btn btn-primary" onclick="processText()">Adapt &amp; Transform</button>
             </div>
         </section>
 
@@ -102,18 +103,15 @@
                 </div>
             </header>
 
-            <!-- Action Bar -->
             <div class="action-bar">
                 <button class="btn btn-icon" onclick="toggleSpeech()">🔊 Read Aloud</button>
                 <button class="btn btn-icon" onclick="downloadText()">📥 Download TXT</button>
                 <button class="btn btn-icon" onclick="downloadPDF()">📥 Download PDF</button>
             </div>
 
-            <!-- Content Blocks -->
             <section class="content-block" id="content-academic"></section>
             <section class="content-block hidden" id="content-simplified"></section>
 
-            <!-- Visual Aid -->
             <aside class="visual-summary" id="visual-summary">
                 <div class="card">
                     <div class="icon">💡</div>
@@ -123,9 +121,8 @@
         </article>
     </main>
 
-    <!-- NEW: Right Sidebar (Profile & History) -->
+    <!-- Right Sidebar -->
     <aside class="right-sidebar">
-        <!-- Profile Widget -->
         <div class="profile-widget">
             <a href="dashboard.html" class="profile-link">
                 <img src="defprofile.jpeg" alt="Profile" class="profile-pic">
@@ -136,7 +133,6 @@
             </a>
         </div>
 
-        <!-- History Section -->
         <div class="history-section">
             <div class="history-header">
                 <h3>Chat History</h3>
