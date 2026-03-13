@@ -104,6 +104,9 @@ loginForm.addEventListener('submit', async (e) => {
             localStorage.setItem('userStreak', data.streak);
             localStorage.setItem('userTime', data.total_time);
             localStorage.setItem('authToken', data.token);
+            if (data.chat_history) {
+                localStorage.setItem('chatHistory_' + data.email, data.chat_history);
+            }
             window.location.href = "dashboard.html";
         } else {
             alert(data.message);
