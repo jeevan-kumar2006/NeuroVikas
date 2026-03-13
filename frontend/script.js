@@ -4,22 +4,14 @@
 
 // Dynamic URL Configuration
 const getApiUrl = () => {
-    // 1. Local VS Code Development
-    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+    // 1. Local VS Code Development or Direct File Access
+    if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '') {
         return "http://127.0.0.1:5000";
     }
 
     // 2. GitHub Codespaces Logic
-    // Codespaces creates URLs like: https://verbose-space-xyx-5500.app.github.dev
-    // We need to swap the port number in the subdomain.
     if (window.location.hostname.includes('app.github.dev')) {
-        // Replace the port part of the subdomain (e.g., -5500) with the backend port (-5000)
-        // This assumes your frontend is running on a different port than 5000 (like Live Server on 5500)
         let host = window.location.hostname;
-        
-        // If running Live Server (port 5500), it will have -5500 in the URL.
-        // We replace -5500 (or any port) with -5000.
-        // Note: This regex handles the specific format of Codespaces URLs.
         return `https://${host.replace(/-\d+/, '-5000')}`; 
     }
 
@@ -34,7 +26,8 @@ let startTime = Date.now();
 // DOM Elements
 const body = document.body;
 const inputView = document.getElementById('input-view');
-const focusMask = document.getElementById('focus-mask');
+const focusMaskTop = document.getElementById('focus-mask-top');
+const focusMaskBottom = document.getElementById('focus-mask-bottom');
 const distressModal = document.getElementById('distress-modal');
 
 // ==========================================
@@ -184,6 +177,13 @@ function loadFromHistory(text) {
     window.scrollTo(0, 0);
 }
 
+function clearHistory() {
+    if (confirm("Are you sure you want to delete your chat history?")) {
+        localStorage.removeItem('chatHistory');
+        loadHistory();
+    }
+}
+
 // ==========================================
 // MODE SWITCHING
 // ==========================================
@@ -192,22 +192,48 @@ function setMode(mode) {
     document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`btn-${mode}`).classList.add('active');
 
-    if (mode === 'dyslexia') body.classList.add('mode-dyslexia');
-    else if (mode === 'adhd') body.classList.add('mode-adhd');
+    if (mode === 'dyslexia') {
+        body.classList.add('mode-dyslexia');
+        const bionicToggle = document.getElementById('toggle-bionic');
+        if (bionicToggle && !bionicToggle.checked) {
+            bionicToggle.checked = true;
+            toggleBionic(true);
+        }
+    }
+    else if (mode === 'adhd') {
+        body.classList.add('mode-adhd');
+    }
 }
 
 function toggleFocusMask(isActive) {
     if (isActive) {
-        focusMask.classList.add('active');
+        focusMaskTop.classList.add('active');
+        focusMaskBottom.classList.add('active');
         document.addEventListener('mousemove', moveFocusMask);
     } else {
-        focusMask.classList.remove('active');
+        focusMaskTop.classList.remove('active');
+        focusMaskBottom.classList.remove('active');
+        focusMaskTop.style.height = '0';
+        focusMaskBottom.style.height = '0';
         document.removeEventListener('mousemove', moveFocusMask);
     }
 }
 
 function moveFocusMask(e) {
-    focusMask.style.clipPath = `ellipse(80% 120px at 50% ${e.clientY}px)`;
+    const rulerHeight = 120; // bright ruler band height in px
+    const halfRuler = rulerHeight / 2;
+    const mouseY = e.clientY;
+    const windowH = window.innerHeight;
+
+    // Top dark slab: from top to (mouseY - halfRuler)
+    const topH = Math.max(0, mouseY - halfRuler);
+    focusMaskTop.style.height = topH + 'px';
+
+    // Bottom dark slab: from (mouseY + halfRuler) to bottom
+    const bottomTop = Math.min(windowH, mouseY + halfRuler);
+    const bottomH = Math.max(0, windowH - bottomTop);
+    focusMaskBottom.style.top = 'auto';
+    focusMaskBottom.style.height = bottomH + 'px';
 }
 
 // ==========================================
