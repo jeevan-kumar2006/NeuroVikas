@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Result | DIFFERENT IDEA</title>
+    <title>Result | NeuroVikas</title>
     <!-- Reuse existing styles -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="result.css"> 
@@ -13,7 +13,7 @@
 
     <!-- Control Sidebar (Same as before) -->
     <nav class="control-panel">
-        <div class="logo">DIFFERENT IDEA</div>
+        <div class="logo">NeuroVikas</div>
         <p class="tagline">Reading Mode</p>
 
         <div class="control-group">
@@ -57,8 +57,10 @@
     <!-- Main Content Area -->
     <main class="content-area" id="content-area">
         
-        <!-- Focus Mask -->
-        <div class="focus-mask" id="focus-mask"></div>
+        <!-- Focus Mask Overlays (Top, Bottom dark slabs, and bright ruler) -->
+        <div class="focus-mask-top" id="focus-mask-top"></div>
+        <div class="focus-mask-ruler" id="focus-mask-ruler"></div>
+        <div class="focus-mask-bottom" id="focus-mask-bottom"></div>
 
         <!-- Top Action Bar -->
         <div class="top-bar">
@@ -80,7 +82,7 @@
             <div class="action-bar">
                 <button id="tts-btn" class="btn btn-icon" onclick="toggleSpeech()">🔊 Read Aloud</button>
                 <button class="btn btn-icon" onclick="downloadText()">📥 Download TXT</button>
-                <button class="btn btn-icon" onclick="downloadPDF()">📥 Download PDF</button>
+                <button class="btn btn-icon" onclick="downloadPDF(event)">📥 Download PDF</button>
             </div>
 
             <!-- Dynamic Content -->
