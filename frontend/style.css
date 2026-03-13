@@ -1,12 +1,12 @@
 :root {
     --bg-color: #f4f4f9;
     --text-color: #333;
-    --font-main: 'Inter', sans-serif;
+    --font-main: 'Space Grotesk', 'Inter', sans-serif;
     --font-readable: 'Lexend', sans-serif;
     --panel-bg: #ffffff;
-    --accent: #4a90e2;
-    --accent-dark: #357abd;
-    --accent-glow: rgba(74, 144, 226, 0.35);
+    --accent: #2d7dd2;
+    --accent-dark: #1a4fa0;
+    --accent-glow: rgba(45, 125, 210, 0.35);
     --warning: #f4b400;
     --success: #0f9d58;
 }
@@ -33,7 +33,17 @@ body {
     z-index: 100;
 }
 
-.logo { font-weight: 800; font-size: 2.5rem; color: var(--accent); }
+.logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 2rem;
+    color: #1a4fa0;
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+.logo-accent { color: #2d7dd2; }
+
 .control-group h3 { font-size: 0.95rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
 
 /* ==========================================
@@ -148,8 +158,19 @@ body {
 input:checked + .slider { background: var(--accent); }
 input:checked + .slider::after { left: 22px; }
 
-/* Content Area */
-.content-area { flex: 1; padding: 3rem; overflow-y: auto; position: relative; display: flex; flex-direction: column; align-items: center; }
+/* Content Area — centres between the left flex sidebar and the fixed right sidebar */
+.content-area {
+    flex: 1;
+    padding: 3rem;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;   /* horizontally centres children */
+    margin-right: 280px;   /* push away from fixed right sidebar */
+    min-width: 280px;
+    box-sizing: border-box;
+}
 
 /* Input View */
 .input-view {
@@ -558,14 +579,6 @@ body {
     background: none;
 }
 
-/* Shift Main Content Area to the Left */
-.content-area {
-    /* Existing styles might center it, we force margin-right to make room for sidebar */
-    margin-right: 280px; /* Same as sidebar width */
-    width: calc(100% - 280px - 320px); /* Screen - Right Sidebar - Left Sidebar */
-    /* Ensure it doesn't shrink too small */
-    min-width: 300px; 
-}
 
 /* Mobile Responsive: Hide Right Sidebar on small screens */
 @media (max-width: 1200px) {
@@ -574,6 +587,28 @@ body {
     }
     .content-area {
         margin-right: 0;
-        width: calc(100% - 320px); /* Full width minus left sidebar */
+        width: auto;
     }
+}
+
+/* On smaller screens hide the left control-panel too */
+@media (max-width: 760px) {
+    .control-panel {
+        display: none;
+    }
+    .content-area {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 1.5rem;
+    }
+}
+
+/* Fix: upload buttons wrap instead of overflow */
+.upload-section {
+    flex-wrap: wrap;
+}
+
+/* Fix: action-bar items align properly */
+.action-bar {
+    align-items: center;
 }
