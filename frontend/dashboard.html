@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | NeuroVikas</title>
     <link rel="stylesheet" href="dashboard.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -27,7 +27,7 @@
         <!-- LEFT: Chat History Sidebar -->
         <aside class="dash-history-sidebar" id="dash-history-sidebar">
             <div class="history-header">
-                <h3>📋 Chat History</h3>
+                <h3>Chat History</h3>
                 <button class="btn-clear-history" id="dash-clear-btn" onclick="dashClearHistory()">Clear</button>
             </div>
             <ul id="dash-history-list" class="dash-history-list">
@@ -43,7 +43,6 @@
             </header>
 
             <div class="stats-grid">
-                <!-- Streak Card -->
                 <div class="stat-card streak-card">
                     <div class="card-icon">🔥</div>
                     <div class="card-info">
@@ -53,7 +52,6 @@
                     <div class="card-footer">Keep it going!</div>
                 </div>
 
-                <!-- Time Card -->
                 <div class="stat-card time-card">
                     <div class="card-icon">⏱️</div>
                     <div class="card-info">
@@ -63,7 +61,6 @@
                     <div class="card-footer">Great progress!</div>
                 </div>
 
-                <!-- Sessions Card -->
                 <div class="stat-card sessions-card">
                     <div class="card-icon">📚</div>
                     <div class="card-info">
@@ -73,7 +70,6 @@
                     <div class="card-footer">Keep learning!</div>
                 </div>
 
-                <!-- History Count Card -->
                 <div class="stat-card history-card">
                     <div class="card-icon">🗂️</div>
                     <div class="card-info">
@@ -90,19 +86,17 @@
                 </a>
             </div>
 
-            <!-- ==============================
-                 INLINE PROGRESS CHART
-                 ============================== -->
+            <!-- INLINE PROGRESS CHART -->
             <div class="inline-chart-section">
                 <div class="chart-section-header">
-                    <h2 class="chart-title">📊 Your Progress</h2>
+                    <h2 class="chart-title">Your Progress</h2>
                     <p class="chart-subtitle">Visual overview of your learning journey</p>
                 </div>
                 <div class="inline-chart-wrap">
                     <canvas id="progress-chart" width="540" height="280"></canvas>
                 </div>
                 <div class="chart-legend">
-                    <span class="legend-dot" style="background:#ff9a9e;"></span> Day Streak
+                    <span class="legend-dot" style="background:#5ba3f5;"></span> Day Streak
                     <span class="legend-dot" style="background:#a18cd1; margin-left:1.5rem;"></span> Minutes Learned
                     <span class="legend-dot" style="background:#84fab0; margin-left:1.5rem;"></span> Sessions Done
                 </div>
@@ -111,13 +105,9 @@
     </div>
 
     <script>
-        // ==========================================
-        // INIT — Check auth, load data
-        // ==========================================
         const user  = localStorage.getItem('currentUser');
         const email = localStorage.getItem('userEmail');
 
-        // Block guests AND unauthenticated users from the dashboard
         if (!user || user === 'Guest') {
             window.location.href = 'login.html';
         } else {
@@ -127,27 +117,19 @@
             const history  = JSON.parse(localStorage.getItem('chatHistory') || '[]');
             const sessions = parseInt(localStorage.getItem('userSessions') || history.length || '0');
 
-            // Populate nav / header
             document.getElementById('dash-user').innerText     = user;
             document.getElementById('nav-username').innerText  = user;
             document.getElementById('dash-email-display').innerText = email || 'No email on file';
 
-            // Populate stat cards
             document.getElementById('dash-streak').innerText        = streak;
             document.getElementById('dash-time').innerText          = minutes;
             document.getElementById('dash-sessions').innerText      = sessions;
             document.getElementById('dash-history-count').innerText = history.length;
 
-            // Load history sidebar
             loadDashHistory();
-
-            // Draw chart inline once DOM is ready
             requestAnimationFrame(drawAnimatedChart);
         }
 
-        // ==========================================
-        // HISTORY SIDEBAR
-        // ==========================================
         function loadDashHistory() {
             const list    = document.getElementById('dash-history-list');
             const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
@@ -192,9 +174,6 @@
             }
         }
 
-        // ==========================================
-        // GRAPH (INLINE)
-        // ==========================================
         function drawAnimatedChart() {
             const canvas  = document.getElementById('progress-chart');
             const ctx     = canvas.getContext('2d');
@@ -210,18 +189,16 @@
             const chartW  = W - padding.left - padding.right;
 
             const bars = [
-                { label: 'Streak (days)', value: streak,   color: '#ff9a9e', maxRef: Math.max(streak, 7) },
+                { label: 'Streak (days)', value: streak,   color: '#5ba3f5', maxRef: Math.max(streak, 7) },
                 { label: 'Minutes',       value: minutes,  color: '#a18cd1', maxRef: Math.max(minutes, 10) },
                 { label: 'Sessions',      value: sessions, color: '#84fab0', maxRef: Math.max(sessions, 5) },
             ];
 
-            // Global max for scaling
             const globalMax = Math.max(...bars.map(b => b.value), 1);
-
             const barW   = Math.floor(chartW / (bars.length * 2 + 1));
             const gap    = barW;
             let progress = 0;
-            const DURATION = 900; // ms
+            const DURATION = 900;
             let startTs  = null;
 
             function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
@@ -233,8 +210,7 @@
 
                 ctx.clearRect(0, 0, W, H);
 
-                // Grid lines
-                ctx.strokeStyle = '#e8eaed';
+                ctx.strokeStyle = 'rgba(45,125,210,0.08)';
                 ctx.lineWidth   = 1;
                 for (let i = 0; i <= 4; i++) {
                     const y = padding.top + (chartH / 4) * i;
@@ -243,10 +219,9 @@
                     ctx.lineTo(W - padding.right, y);
                     ctx.stroke();
 
-                    // Y-axis label
                     const val = Math.round(globalMax * (1 - i / 4));
-                    ctx.fillStyle  = '#aaa';
-                    ctx.font       = '11px Inter, sans-serif';
+                    ctx.fillStyle  = '#7a8fa6';
+                    ctx.font       = '11px DM Sans, sans-serif';
                     ctx.textAlign  = 'right';
                     ctx.fillText(val, padding.left - 6, y + 4);
                 }
@@ -257,13 +232,11 @@
                     const animH     = fullH * eased;
                     const y         = padding.top + chartH - animH;
 
-                    // Bar gradient
                     const grad = ctx.createLinearGradient(0, y, 0, padding.top + chartH);
                     grad.addColorStop(0, bar.color);
-                    grad.addColorStop(1, bar.color + '66');
+                    grad.addColorStop(1, bar.color + '55');
 
-                    // Rounded top bar
-                    const r = Math.min(6, animH / 2);
+                    const r = Math.min(8, animH / 2);
                     ctx.beginPath();
                     ctx.moveTo(x + r, y);
                     ctx.lineTo(x + barW - r, y);
@@ -276,10 +249,9 @@
                     ctx.fillStyle = grad;
                     ctx.fill();
 
-                    // Value label on top of bar
                     if (progress > 0.5) {
-                        ctx.fillStyle  = '#555';
-                        ctx.font       = 'bold 13px Inter, sans-serif';
+                        ctx.fillStyle  = '#3a4a5c';
+                        ctx.font       = '600 13px DM Sans, sans-serif';
                         ctx.textAlign  = 'center';
                         const opacity  = Math.min(1, (progress - 0.5) * 2);
                         ctx.globalAlpha = opacity;
@@ -287,9 +259,8 @@
                         ctx.globalAlpha = 1;
                     }
 
-                    // X-axis label
-                    ctx.fillStyle  = '#777';
-                    ctx.font       = '11px Inter, sans-serif';
+                    ctx.fillStyle  = '#7a8fa6';
+                    ctx.font       = '11px DM Sans, sans-serif';
                     ctx.textAlign  = 'center';
                     ctx.fillText(bar.label, x + barW / 2, H - 6);
                 });
@@ -300,9 +271,6 @@
             requestAnimationFrame(frame);
         }
 
-        // ==========================================
-        // LOGOUT
-        // ==========================================
         function logout() {
             localStorage.removeItem('currentUser');
             localStorage.removeItem('userEmail');
