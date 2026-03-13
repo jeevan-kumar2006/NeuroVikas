@@ -77,7 +77,7 @@ function renderContent(text, summaryPoints) {
 
     const simplifiedDiv = document.getElementById('content-simplified');
     let listItems = summaryPoints.map(s => `<li>${s}</li>`).join('');
-    simplifiedDiv.innerHTML = '<h3>AI Generated Summary</h3><ul>' + listItems + '</ul>';
+    simplifiedDiv.innerHTML = '<ul>' + listItems + '</ul>';
 }
 
 // ==========================================
