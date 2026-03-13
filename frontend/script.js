@@ -166,6 +166,97 @@ async function handleFileUpload(input) {
 }
 
 // ==========================================
+// SPEECH TO TEXT (DICTATION)
+// ==========================================
+let recognition;
+let isDictating = false;
+
+function initSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        console.warn("Speech Recognition API not supported in this browser.");
+        return null;
+    }
+    const rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+
+    rec.onstart = () => {
+        isDictating = true;
+        const btn = document.getElementById('dictate-btn');
+        if (btn) {
+            btn.innerHTML = '🔴 Recording...';
+            btn.style.color = '#ff4d4d';
+            btn.style.borderColor = '#ff4d4d';
+        }
+    };
+
+    rec.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript + ' ';
+            }
+        }
+        if (finalTranscript) {
+            const input = document.getElementById('user-input');
+            input.value = input.value ? input.value + (input.value.endsWith(' ') ? '' : ' ') + finalTranscript : finalTranscript;
+        }
+    };
+
+    rec.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        stopDictation();
+    };
+
+    rec.onend = () => {
+        // Automatically stopped
+        if (isDictating) {
+           stopDictation();
+        }
+    };
+
+    return rec;
+}
+
+function stopDictation() {
+    if (recognition && isDictating) {
+        recognition.stop();
+    }
+    isDictating = false;
+    const btn = document.getElementById('dictate-btn');
+    if (btn) {
+        btn.innerHTML = '🎤 Speech to Text';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+    }
+}
+
+function toggleDictation() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Your browser does not support Speech Recognition. Please try Google Chrome or Edge.");
+        return;
+    }
+
+    if (!recognition) {
+        recognition = initSpeechRecognition();
+    }
+
+    if (isDictating) {
+        stopDictation();
+    } else {
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error(e);
+            stopDictation();
+        }
+    }
+}
+
+// ==========================================
 // HISTORY & PROFILE FUNCTIONS
 // ==========================================
 
