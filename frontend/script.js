@@ -23,28 +23,40 @@ const API_URL = getApiUrl();
 let currentUser = localStorage.getItem('currentUser') || 'Guest';
 let startTime = Date.now();
 
-// DOM Elements
+// DOM Elements - lazy getters so they're always resolved after DOM is ready
 const body = document.body;
-const inputView = document.getElementById('input-view');
-const focusMaskTop = document.getElementById('focus-mask-top');
-const focusMaskBottom = document.getElementById('focus-mask-bottom');
-const distressModal = document.getElementById('distress-modal');
+let focusMaskTop, focusMaskBottom, distressModal;
+
+function getEl(id) { return document.getElementById(id); }
 
 // ==========================================
 // INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    setMode('default');
-    
-    // --- Load User & History ---
+    // Resolve DOM elements now that the DOM is fully ready
+    focusMaskTop    = getEl('focus-mask-top');
+    focusMaskBottom = getEl('focus-mask-bottom');
+    distressModal   = getEl('distress-modal');
+
+    // --- Load User & History FIRST so it always renders ---
     const user = localStorage.getItem('currentUser');
     if (user) {
-        // Update Sidebar Username
-        const sidebarUser = document.getElementById('sidebar-username');
+        const sidebarUser = getEl('sidebar-username');
         if (sidebarUser) sidebarUser.innerText = user;
     }
-    
     loadHistory();
+
+    // Apply the user's saved mode
+    const savedMode = localStorage.getItem('preferredMode') || 'default';
+    setMode(savedMode);
+
+    // Catch history redirects from result page
+    const historyTextToLoad = sessionStorage.getItem('loadedHistoryText');
+    if (historyTextToLoad) {
+        const inputEl = getEl('user-input');
+        if (inputEl) inputEl.value = historyTextToLoad;
+        sessionStorage.removeItem('loadedHistoryText');
+    }
 });
 
 // ==========================================
@@ -54,10 +66,18 @@ async function processText() {
     const rawText = document.getElementById('user-input').value.trim();
     if (!rawText) return alert("Please enter some text first!");
 
-    // 1. Save to History first
-    saveToHistory(rawText);
+    // Check Guest Limit
+    const user = localStorage.getItem('currentUser') || 'Guest';
+    if (user === 'Guest') {
+        let guestUsageCount = parseInt(localStorage.getItem('guestUsageCount') || '0');
+        if (guestUsageCount >= 3) {
+            alert("You have reached your limit of 3 free uploads. Please log in or create an account to continue!");
+            return;
+        }
+        localStorage.setItem('guestUsageCount', guestUsageCount + 1);
+    }
 
-    // 2. UI Loading State
+    // 1. UI Loading State
     document.querySelector('.input-actions').innerHTML = "Analyzing...";
 
     try {
@@ -86,6 +106,9 @@ async function processText() {
             recommendedMode: analysisData.recommendedMode
         };
         
+        // 5. Save history NOW with the full result, then redirect
+        saveToHistory(rawText, resultPayload);
+
         sessionStorage.setItem('currentResult', JSON.stringify(resultPayload));
 
         // 6. Redirect to Result Page
@@ -104,6 +127,18 @@ async function processText() {
 async function handleFileUpload(input) {
     const file = input.files[0];
     if (!file) return;
+
+    // Check Guest Limit
+    const user = localStorage.getItem('currentUser') || 'Guest';
+    if (user === 'Guest') {
+        let guestUsageCount = parseInt(localStorage.getItem('guestUsageCount') || '0');
+        if (guestUsageCount >= 3) {
+            alert("You have reached your limit of 3 free uploads. Please log in or create an account to continue!");
+            input.value = ''; // clear input
+            return;
+        }
+        localStorage.setItem('guestUsageCount', guestUsageCount + 1);
+    }
 
     document.getElementById('user-input').value = "Processing file...";
     
@@ -134,27 +169,49 @@ async function handleFileUpload(input) {
 // HISTORY & PROFILE FUNCTIONS
 // ==========================================
 
-function saveToHistory(text) {
-    if (!text || text.length < 20) return; // Don't save very short texts
+function saveToHistory(text, resultPayload) {
+    if (!text || text.length < 20) return;
+
+    const user = localStorage.getItem('currentUser') || 'Guest';
+    if (user === 'Guest') return; // No history for guests
 
     let history = JSON.parse(localStorage.getItem('chatHistory')) || [];
     
-    // Avoid duplicates
-    if (history[0] !== text) {
-        // Add to start of array
-        history.unshift(text);
-        
-        // Keep only last 5 items
+    // Avoid exact duplicate of most recent item
+    if (!history.length || history[0].text !== text) {
+        history.unshift({ text: text, result: resultPayload || null });
         if (history.length > 5) history.pop();
-        
         localStorage.setItem('chatHistory', JSON.stringify(history));
-        loadHistory(); // Refresh UI
+        loadHistory();
+        syncHistoryToDB();
     }
 }
 
+async function syncHistoryToDB() {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+    
+    try {
+        await fetch(`${API_URL}/api/sync_history`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                token: token, 
+                chat_history: localStorage.getItem('chatHistory') || '[]' 
+            })
+        });
+    } catch(e) { console.log('History sync failed', e); }
+}
+
 function loadHistory() {
-    const list = document.getElementById('history-list');
-    if (!list) return; // Safety check
+    const list = getEl('history-list');
+    if (!list) return;
+
+    const user = localStorage.getItem('currentUser') || 'Guest';
+    if (user === 'Guest') {
+        list.innerHTML = '<li class="history-empty" style="font-style: italic;">Log in to save history</li>';
+        return;
+    }
 
     const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
 
@@ -163,24 +220,40 @@ function loadHistory() {
         return;
     }
 
-    list.innerHTML = history.map(item => {
-        // Truncate for display
-        const displayText = item.substring(0, 30) + "...";
-        // Safe quote escaping for onclick
-        const safeText = item.replace(/'/g, "\\'").replace(/"/g, '\\"');
-        return `<li onclick="loadFromHistory('${safeText}')">${displayText}</li>`;
+    list.innerHTML = history.map((item, index) => {
+        // Support both old format (string) and new format (object)
+        const text = typeof item === 'string' ? item : item.text;
+        const displayText = text.substring(0, 30) + '...';
+        return `<li onclick="loadFromHistory(${index})" title="${text.substring(0, 80)}">${displayText}</li>`;
     }).join('');
 }
 
-function loadFromHistory(text) {
-    document.getElementById('user-input').value = text;
-    window.scrollTo(0, 0);
+function loadFromHistory(index) {
+    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    const item = history[index];
+    if (!item) return;
+
+    // Support both old string format and new object format
+    const result = typeof item === 'string' ? null : item.result;
+    const text   = typeof item === 'string' ? item  : item.text;
+
+    if (result) {
+        // We have the saved result — navigate directly to the result page
+        sessionStorage.setItem('currentResult', JSON.stringify(result));
+        window.location.href = 'result.html';
+    } else {
+        // Older entry without saved result — just populate the textarea
+        const inputEl = getEl('user-input');
+        if (inputEl) inputEl.value = text;
+        window.scrollTo(0, 0);
+    }
 }
 
 function clearHistory() {
     if (confirm("Are you sure you want to delete your chat history?")) {
         localStorage.removeItem('chatHistory');
         loadHistory();
+        syncHistoryToDB();
     }
 }
 
@@ -190,22 +263,47 @@ function clearHistory() {
 function setMode(mode) {
     body.classList.remove('mode-dyslexia', 'mode-adhd');
     document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-${mode}`).classList.add('active');
+    const modeBtn = document.getElementById(`btn-${mode}`);
+    if (modeBtn) modeBtn.classList.add('active');
 
+    const bionicToggle = document.getElementById('toggle-bionic');
+    const focusToggle  = document.getElementById('toggle-focus');
+    const adhdExitBtn  = document.getElementById('adhd-exit-btn');
+
+    // --- Dyslexia Mode ---
     if (mode === 'dyslexia') {
         body.classList.add('mode-dyslexia');
-        const bionicToggle = document.getElementById('toggle-bionic');
-        if (bionicToggle && !bionicToggle.checked) {
-            bionicToggle.checked = true;
-            toggleBionic(true);
-        }
+        if (bionicToggle) { bionicToggle.checked = true; }
+        // toggleBionic only exists on result.js — guard safely
+        if (typeof toggleBionic === 'function') toggleBionic(true);
+    } else {
+        if (bionicToggle) { bionicToggle.checked = false; }
+        if (typeof toggleBionic === 'function') toggleBionic(false);
     }
-    else if (mode === 'adhd') {
+
+    // --- ADHD Mode ---
+    if (mode === 'adhd') {
         body.classList.add('mode-adhd');
+        // Always force Focus Mask ON
+        if (focusToggle) { focusToggle.checked = true; }
+        toggleFocusMask(true);
+        if (adhdExitBtn) adhdExitBtn.classList.remove('hidden');
+    } else {
+        // Turn Focus Mask OFF when leaving adhd
+        if (focusToggle) { focusToggle.checked = false; }
+        toggleFocusMask(false);
+        if (adhdExitBtn) adhdExitBtn.classList.add('hidden');
     }
+
+    localStorage.setItem('preferredMode', mode);
 }
 
 function toggleFocusMask(isActive) {
+    // Re-resolve in case they were null at startup
+    if (!focusMaskTop)    focusMaskTop    = getEl('focus-mask-top');
+    if (!focusMaskBottom) focusMaskBottom = getEl('focus-mask-bottom');
+    if (!focusMaskTop || !focusMaskBottom) return; // elements missing, bail out
+
     if (isActive) {
         focusMaskTop.classList.add('active');
         focusMaskBottom.classList.add('active');
@@ -239,8 +337,24 @@ function moveFocusMask(e) {
 // ==========================================
 // TIME TRACKING (Secure)
 // ==========================================
-function triggerBreak() { distressModal.classList.remove('hidden'); }
-function closeBreak() { distressModal.classList.add('hidden'); }
+function triggerBreak() {
+    if (!distressModal) distressModal = getEl('distress-modal');
+    if (distressModal) distressModal.classList.remove('hidden');
+}
+function closeBreak() {
+    if (!distressModal) distressModal = getEl('distress-modal');
+    if (distressModal) distressModal.classList.add('hidden');
+}
+
+// Index-page stub for Bionic Reading toggle
+// (full implementation lives in result.js for the results page)
+function toggleBionic(isActive) {
+    // On the index/upload page there is no article content to transform,
+    // so this is intentionally a no-op. The toggle visual state is managed by CSS.
+}
+
+// Stub so the complexity dropdown doesn't throw on pages without it
+function changeComplexity(level) {}
 
 async function syncTime() {
     const token = localStorage.getItem('authToken');
