@@ -5,95 +5,313 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | NeuroVikas</title>
     <link rel="stylesheet" href="dashboard.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
+    <!-- Top Navigation -->
     <nav class="top-nav">
-        <div class="logo">NeuroVikas</div>
+        <div class="logo">Neuro<span class="logo-accent">Vikas</span></div>
+        <div class="nav-center">
+            <a href="index.html" class="nav-link">← Back to Learn</a>
+        </div>
         <div class="nav-right">
-            <!-- Display Username in Nav -->
-            <span id="nav-username">User</span>
+            <span id="nav-username" class="nav-user-label">User</span>
             <button class="btn-logout" onclick="logout()">Logout</button>
         </div>
     </nav>
 
-    <main class="dashboard-container">
-        <header class="welcome-header">
-            <!-- Display Username in Title -->
-            <h1>Welcome back, <span id="dash-user">Learner</span>!</h1>
-            <!-- Display Email below title -->
-            <p id="dash-email-display" class="subtitle">Loading email...</p>
-        </header>
+    <!-- Main body layout: sidebar + content -->
+    <div class="dash-layout">
 
-        <div class="stats-grid">
-            <!-- Streak Card -->
-            <div class="stat-card streak-card">
-                <div class="card-icon">🔥</div>
-                <div class="card-info">
-                    <h2 id="dash-streak">0</h2>
-                    <p>Day Streak</p>
+        <!-- LEFT: Chat History Sidebar -->
+        <aside class="dash-history-sidebar" id="dash-history-sidebar">
+            <div class="history-header">
+                <h3>📋 Chat History</h3>
+                <button class="btn-clear-history" id="dash-clear-btn" onclick="dashClearHistory()">Clear</button>
+            </div>
+            <ul id="dash-history-list" class="dash-history-list">
+                <li class="history-empty">Loading...</li>
+            </ul>
+        </aside>
+
+        <!-- RIGHT: Main Dashboard Content -->
+        <main class="dashboard-container">
+            <header class="welcome-header">
+                <h1>Welcome back, <span id="dash-user">Learner</span>! 👋</h1>
+                <p id="dash-email-display" class="subtitle">Loading...</p>
+            </header>
+
+            <div class="stats-grid">
+                <!-- Streak Card -->
+                <div class="stat-card streak-card">
+                    <div class="card-icon">🔥</div>
+                    <div class="card-info">
+                        <h2 id="dash-streak">0</h2>
+                        <p>Day Streak</p>
+                    </div>
+                    <div class="card-footer">Keep it going!</div>
                 </div>
-                <div class="card-footer">Keep it going!</div>
+
+                <!-- Time Card -->
+                <div class="stat-card time-card">
+                    <div class="card-icon">⏱️</div>
+                    <div class="card-info">
+                        <h2 id="dash-time">0</h2>
+                        <p>Minutes Learned</p>
+                    </div>
+                    <div class="card-footer">Great progress!</div>
+                </div>
+
+                <!-- Sessions Card -->
+                <div class="stat-card sessions-card">
+                    <div class="card-icon">📚</div>
+                    <div class="card-info">
+                        <h2 id="dash-sessions">0</h2>
+                        <p>Sessions Done</p>
+                    </div>
+                    <div class="card-footer">Keep learning!</div>
+                </div>
+
+                <!-- History Count Card -->
+                <div class="stat-card history-card">
+                    <div class="card-icon">🗂️</div>
+                    <div class="card-info">
+                        <h2 id="dash-history-count">0</h2>
+                        <p>Saved Items</p>
+                    </div>
+                    <div class="card-footer">In your history</div>
+                </div>
             </div>
 
-            <!-- Time Card -->
-            <div class="stat-card time-card">
-                <div class="card-icon">⏱️</div>
-                <div class="card-info">
-                    <h2 id="dash-time">0</h2>
-                    <p>Minutes Learned</p>
-                </div>
-                <div class="card-footer">Great progress!</div>
+            <div class="actions-section">
+                <a href="index.html" class="btn-primary-large">
+                    🚀 Start Learning Session
+                </a>
             </div>
-        </div>
 
-        <div class="actions-section">
-            <a href="index.html" class="btn-primary-large">
-                Start Learning Session
-            </a>
-        </div>
-    </main>
+            <!-- ==============================
+                 INLINE PROGRESS CHART
+                 ============================== -->
+            <div class="inline-chart-section">
+                <div class="chart-section-header">
+                    <h2 class="chart-title">📊 Your Progress</h2>
+                    <p class="chart-subtitle">Visual overview of your learning journey</p>
+                </div>
+                <div class="inline-chart-wrap">
+                    <canvas id="progress-chart" width="540" height="280"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-dot" style="background:#ff9a9e;"></span> Day Streak
+                    <span class="legend-dot" style="background:#a18cd1; margin-left:1.5rem;"></span> Minutes Learned
+                    <span class="legend-dot" style="background:#84fab0; margin-left:1.5rem;"></span> Sessions Done
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
-        // Check if user is logged in
-        const user = localStorage.getItem('currentUser');
+        // ==========================================
+        // INIT — Check auth, load data
+        // ==========================================
+        const user  = localStorage.getItem('currentUser');
         const email = localStorage.getItem('userEmail');
-        
-        if (!user) {
-            // If no user found, redirect to login
-            window.location.href = "login.html";
+
+        // Block guests AND unauthenticated users from the dashboard
+        if (!user || user === 'Guest') {
+            window.location.href = 'login.html';
         } else {
-            // Load stats
-            const streak = localStorage.getItem('userStreak') || 0;
-            const time = localStorage.getItem('userTime') || 0;
+            const streak   = parseInt(localStorage.getItem('userStreak') || '0');
+            const timeSec  = parseInt(localStorage.getItem('userTime') || '0');
+            const minutes  = Math.round(timeSec / 60);
+            const history  = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const sessions = parseInt(localStorage.getItem('userSessions') || history.length || '0');
 
-            // Update HTML elements
-            document.getElementById('dash-user').innerText = user;
-            document.getElementById('nav-username').innerText = user;
-            
-            // Update Email Display
-            if (email) {
-                document.getElementById('dash-email-display').innerText = email;
-            } else {
-                document.getElementById('dash-email-display').innerText = "Guest Mode";
-            }
+            // Populate nav / header
+            document.getElementById('dash-user').innerText     = user;
+            document.getElementById('nav-username').innerText  = user;
+            document.getElementById('dash-email-display').innerText = email || 'No email on file';
 
-            document.getElementById('dash-streak').innerText = streak;
-            
-            // Convert seconds to minutes for display
-            document.getElementById('dash-time').innerText = Math.round(time / 60);
+            // Populate stat cards
+            document.getElementById('dash-streak').innerText        = streak;
+            document.getElementById('dash-time').innerText          = minutes;
+            document.getElementById('dash-sessions').innerText      = sessions;
+            document.getElementById('dash-history-count').innerText = history.length;
+
+            // Load history sidebar
+            loadDashHistory();
+
+            // Draw chart inline once DOM is ready
+            requestAnimationFrame(drawAnimatedChart);
         }
 
+        // ==========================================
+        // HISTORY SIDEBAR
+        // ==========================================
+        function loadDashHistory() {
+            const list    = document.getElementById('dash-history-list');
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+            if (history.length === 0) {
+                list.innerHTML = '<li class="history-empty">No history yet. Start a session!</li>';
+                return;
+            }
+
+            list.innerHTML = history.map((item, index) => {
+                const text        = typeof item === 'string' ? item : item.text;
+                const displayText = text.substring(0, 35) + (text.length > 35 ? '…' : '');
+                const dateStr     = item.date ? new Date(item.date).toLocaleDateString() : '';
+                return `<li onclick="loadHistoryItem(${index})" title="${text.substring(0, 100)}">
+                    <span class="hist-icon">📄</span>
+                    <span class="hist-text">${displayText}</span>
+                    ${dateStr ? `<span class="hist-date">${dateStr}</span>` : ''}
+                </li>`;
+            }).join('');
+        }
+
+        function loadHistoryItem(index) {
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const item    = history[index];
+            if (!item) return;
+            const result  = typeof item === 'string' ? null : item.result;
+            if (result) {
+                sessionStorage.setItem('currentResult', JSON.stringify(result));
+                window.location.href = 'result.html';
+            } else {
+                const text = typeof item === 'string' ? item : item.text;
+                sessionStorage.setItem('loadedHistoryText', text);
+                window.location.href = 'index.html';
+            }
+        }
+
+        function dashClearHistory() {
+            if (confirm('Are you sure you want to clear your chat history?')) {
+                localStorage.removeItem('chatHistory');
+                document.getElementById('dash-history-count').innerText = '0';
+                loadDashHistory();
+            }
+        }
+
+        // ==========================================
+        // GRAPH (INLINE)
+        // ==========================================
+        function drawAnimatedChart() {
+            const canvas  = document.getElementById('progress-chart');
+            const ctx     = canvas.getContext('2d');
+            const streak  = parseInt(localStorage.getItem('userStreak') || '0');
+            const minutes = Math.round(parseInt(localStorage.getItem('userTime') || '0') / 60);
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            const sessions = parseInt(localStorage.getItem('userSessions') || history.length || '0');
+
+            const W = canvas.width;
+            const H = canvas.height;
+            const padding = { top: 30, bottom: 50, left: 40, right: 20 };
+            const chartH  = H - padding.top - padding.bottom;
+            const chartW  = W - padding.left - padding.right;
+
+            const bars = [
+                { label: 'Streak (days)', value: streak,   color: '#ff9a9e', maxRef: Math.max(streak, 7) },
+                { label: 'Minutes',       value: minutes,  color: '#a18cd1', maxRef: Math.max(minutes, 10) },
+                { label: 'Sessions',      value: sessions, color: '#84fab0', maxRef: Math.max(sessions, 5) },
+            ];
+
+            // Global max for scaling
+            const globalMax = Math.max(...bars.map(b => b.value), 1);
+
+            const barW   = Math.floor(chartW / (bars.length * 2 + 1));
+            const gap    = barW;
+            let progress = 0;
+            const DURATION = 900; // ms
+            let startTs  = null;
+
+            function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+            function frame(ts) {
+                if (!startTs) startTs = ts;
+                progress = Math.min((ts - startTs) / DURATION, 1);
+                const eased = easeOut(progress);
+
+                ctx.clearRect(0, 0, W, H);
+
+                // Grid lines
+                ctx.strokeStyle = '#e8eaed';
+                ctx.lineWidth   = 1;
+                for (let i = 0; i <= 4; i++) {
+                    const y = padding.top + (chartH / 4) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, y);
+                    ctx.lineTo(W - padding.right, y);
+                    ctx.stroke();
+
+                    // Y-axis label
+                    const val = Math.round(globalMax * (1 - i / 4));
+                    ctx.fillStyle  = '#aaa';
+                    ctx.font       = '11px Inter, sans-serif';
+                    ctx.textAlign  = 'right';
+                    ctx.fillText(val, padding.left - 6, y + 4);
+                }
+
+                bars.forEach((bar, i) => {
+                    const x         = padding.left + gap + i * (barW + gap);
+                    const fullH     = bar.value > 0 ? (bar.value / globalMax) * chartH : 0;
+                    const animH     = fullH * eased;
+                    const y         = padding.top + chartH - animH;
+
+                    // Bar gradient
+                    const grad = ctx.createLinearGradient(0, y, 0, padding.top + chartH);
+                    grad.addColorStop(0, bar.color);
+                    grad.addColorStop(1, bar.color + '66');
+
+                    // Rounded top bar
+                    const r = Math.min(6, animH / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(x + r, y);
+                    ctx.lineTo(x + barW - r, y);
+                    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+                    ctx.lineTo(x + barW, padding.top + chartH);
+                    ctx.lineTo(x, padding.top + chartH);
+                    ctx.lineTo(x, y + r);
+                    ctx.quadraticCurveTo(x, y, x + r, y);
+                    ctx.closePath();
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+
+                    // Value label on top of bar
+                    if (progress > 0.5) {
+                        ctx.fillStyle  = '#555';
+                        ctx.font       = 'bold 13px Inter, sans-serif';
+                        ctx.textAlign  = 'center';
+                        const opacity  = Math.min(1, (progress - 0.5) * 2);
+                        ctx.globalAlpha = opacity;
+                        ctx.fillText(bar.value, x + barW / 2, y - 8);
+                        ctx.globalAlpha = 1;
+                    }
+
+                    // X-axis label
+                    ctx.fillStyle  = '#777';
+                    ctx.font       = '11px Inter, sans-serif';
+                    ctx.textAlign  = 'center';
+                    ctx.fillText(bar.label, x + barW / 2, H - 6);
+                });
+
+                if (progress < 1) requestAnimationFrame(frame);
+            }
+
+            requestAnimationFrame(frame);
+        }
+
+        // ==========================================
+        // LOGOUT
+        // ==========================================
         function logout() {
-            // Only clear auth-related keys — preserve chatHistory and preferredMode
             localStorage.removeItem('currentUser');
             localStorage.removeItem('userEmail');
             localStorage.removeItem('userStreak');
             localStorage.removeItem('userTime');
+            localStorage.removeItem('userSessions');
             localStorage.removeItem('authToken');
             localStorage.removeItem('guestUsageCount');
-            window.location.href = "login.html";
+            window.location.href = 'login.html';
         }
     </script>
 </body>
