@@ -61,6 +61,11 @@ def init_db():
                 session_token TEXT
             )
         ''')
+        # Safely add the chat_history column to existing databases
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN chat_history TEXT DEFAULT '[]'")
+        except sqlite3.OperationalError:
+            pass # Column already exists
         
         conn.commit()
         print(">>> Database initialized successfully.")
@@ -175,7 +180,8 @@ def login():
                 "email": user['email'],     # Return Email
                 "streak": new_streak,
                 "total_time": user['total_time_seconds'] or 0,
-                "token": token
+                "token": token,
+                "chat_history": user['chat_history'] or '[]' # Return History
             })
         else:
             return jsonify({"success": False, "message": "Invalid credentials"}), 401
@@ -202,6 +208,27 @@ def update_time():
         conn.commit()
         updated_user = conn.execute("SELECT total_time_seconds FROM users WHERE id=?", (user['id'],)).fetchone()
         return jsonify({"success": True, "total_time": updated_user['total_time_seconds']})
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/sync_history', methods=['POST'])
+def sync_history():
+    data = request.json
+    token = data.get('token')
+    chat_history = data.get('chat_history', '[]')
+    
+    user = get_user_from_token(token)
+    if not user: return jsonify({"success": False, "message": "Unauthorized"}), 401
+    
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute("UPDATE users SET chat_history = ? WHERE id = ?", (chat_history, user['id']))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"!!! Sync History Error: {e}")
+        return jsonify({"success": False, "message": "Server error"}), 500
     finally:
         if conn: conn.close()
 
