@@ -4,15 +4,14 @@
 
 // Dynamic URL Configuration
 const getApiUrl = () => {
-    // 1. Local VS Code Development
-    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+    // 1. Local VS Code Development or Direct File Access
+    if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '') {
         return "http://127.0.0.1:5000";
     }
+
+    // 2. GitHub Codespaces Logic
     if (window.location.hostname.includes('app.github.dev')) {
-        // Replace the port part of the subdomain (e.g., -5500) with the backend port (-5000)
-        // This assumes your frontend is running on a different port than 5000 (like Live Server on 5500)
         let host = window.location.hostname;
-        
         return `https://${host.replace(/-\d+/, '-5000')}`; 
     }
 
@@ -25,7 +24,9 @@ let state = { mode: 'default', bionicActive: false };
 
 // Elements
 const body = document.body;
-const focusMask = document.getElementById('focus-mask');
+const focusMaskTop = document.getElementById('focus-mask-top');
+const focusMaskRuler = document.getElementById('focus-mask-ruler');
+const focusMaskBottom = document.getElementById('focus-mask-bottom');
 const distressModal = document.getElementById('distress-modal');
 
 // ==========================================
@@ -83,8 +84,17 @@ function setMode(mode) {
     document.getElementById(`btn-${mode}`).classList.add('active');
     state.mode = mode;
 
-    if (mode === 'dyslexia') body.classList.add('mode-dyslexia');
-    else if (mode === 'adhd') body.classList.add('mode-adhd');
+    if (mode === 'dyslexia') {
+        body.classList.add('mode-dyslexia');
+        const bionicToggle = document.getElementById('toggle-bionic');
+        if (bionicToggle && !bionicToggle.checked) {
+            bionicToggle.checked = true;
+            toggleBionic(true);
+        }
+    }
+    else if (mode === 'adhd') {
+        body.classList.add('mode-adhd');
+    }
 }
 
 function toggleBionic(isActive) {
@@ -116,27 +126,72 @@ function toggleBionic(isActive) {
 function changeComplexity(level) {
     const academic = document.getElementById('content-academic');
     const simplified = document.getElementById('content-simplified');
+    const bionicToggle = document.getElementById('toggle-bionic');
+    const bionicLabel = bionicToggle ? bionicToggle.closest('.toggle-label') : null;
+
     if (level === 'academic') {
         academic.classList.remove('hidden');
         simplified.classList.add('hidden');
+        // Re-enable bionic reading toggle
+        if (bionicToggle) bionicToggle.disabled = false;
+        if (bionicLabel) {
+            bionicLabel.classList.remove('disabled');
+            bionicLabel.style.display = 'flex';
+        }
     } else {
         academic.classList.add('hidden');
         simplified.classList.remove('hidden');
+        // Disable and visually hide bionic reading in simplified mode
+        if (bionicToggle) {
+            bionicToggle.checked = false;
+            bionicToggle.disabled = true;
+            toggleBionic(false);
+        }
+        if (bionicLabel) {
+            bionicLabel.classList.add('disabled');
+            bionicLabel.style.display = 'none';
+        }
     }
 }
 
 function toggleFocusMask(isActive) {
     if (isActive) {
-        focusMask.classList.add('active');
+        focusMaskTop.classList.add('active');
+        focusMaskBottom.classList.add('active');
+        if (focusMaskRuler) focusMaskRuler.classList.add('active');
         document.addEventListener('mousemove', moveFocusMask);
     } else {
-        focusMask.classList.remove('active');
+        focusMaskTop.classList.remove('active');
+        focusMaskBottom.classList.remove('active');
+        if (focusMaskRuler) focusMaskRuler.classList.remove('active');
+        focusMaskTop.style.height = '0';
+        focusMaskBottom.style.height = '0';
+        if (focusMaskRuler) focusMaskRuler.style.height = '0';
         document.removeEventListener('mousemove', moveFocusMask);
     }
 }
 
 function moveFocusMask(e) {
-    focusMask.style.clipPath = `ellipse(80% 120px at 50% ${e.clientY}px)`;
+    const rulerHeight = 120; // bright ruler band height in px
+    const halfRuler = rulerHeight / 2;
+    const mouseY = e.clientY;
+    const windowH = window.innerHeight;
+
+    // Top dark slab: from top to (mouseY - halfRuler)
+    const topH = Math.max(0, mouseY - halfRuler);
+    focusMaskTop.style.height = topH + 'px';
+
+    // Highlight area: directly surrounding the cursor
+    if (focusMaskRuler) {
+        focusMaskRuler.style.top = topH + 'px';
+        focusMaskRuler.style.height = rulerHeight + 'px';
+    }
+
+    // Bottom dark slab: from (mouseY + halfRuler) to bottom
+    const bottomTop = Math.min(windowH, mouseY + halfRuler);
+    const bottomH = Math.max(0, windowH - bottomTop);
+    focusMaskBottom.style.top = 'auto';
+    focusMaskBottom.style.height = bottomH + 'px';
 }
 
 // ==========================================
@@ -178,10 +233,10 @@ function downloadText() {
     link.click();
 }
 
-async function downloadPDF() {
+async function downloadPDF(event) {
     const text = document.getElementById('content-simplified').innerText || document.getElementById('content-academic').innerText;
-    const btn = event.target;
-    btn.innerText = "Generating...";
+    const btn = event ? event.target : document.querySelector('button[onclick*="downloadPDF"]');
+    if (btn) btn.innerText = "Generating...";
 
     try {
         const response = await fetch(`${API_URL}/api/export-pdf`, {
