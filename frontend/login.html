@@ -5,26 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | NeuroVikas</title>
     <link rel="stylesheet" href="login.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="login-container">
+    <div class="login-container" id="main-container">
+
         <div class="brand-panel">
             <div class="brand-content">
-                <h1>NeuroVikas</h1>
-                <p>Education designed for every mind.</p>
+                <h1>Neuro<span>Vikas</span></h1>
+                <p id="typing-text"></p>
             </div>
         </div>
 
         <div class="form-panel">
             <div class="form-wrapper">
+
                 <div class="mobile-logo">NeuroVikas</div>
-                
+
                 <h2>Welcome Back</h2>
                 <p class="subtitle">Log in to access your personalized dashboard.</p>
 
                 <form id="login-form">
+
                     <div class="input-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" placeholder="name@example.com" required>
@@ -44,74 +46,134 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-full">Log In</button>
-                    
+
                     <div class="divider"><span>or</span></div>
 
-                    <a href="signup.html" class="btn btn-outline btn-full">
-                        Create an Account
-                    </a>
+                    <a href="signup.html" class="btn btn-outline btn-full">Create an Account</a>
                     <br>
-                    <a href="index.html" class="btn btn-outline btn-full" style="background:#f5f5f5; color:#666; border-color:#ddd;">
-                        Continue as Guest
-                    </a>
+                    <a href="index.html" class="btn btn-outline btn-full" style="opacity:0.6;">Continue as Guest</a>
+
                 </form>
             </div>
         </div>
+
     </div>
 
 <script>
-    const getApiUrl = () => {
-    // 1. Local VS Code Development or Direct File Access
-    if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '') {
+/* ── API URL ── */
+const getApiUrl = () => {
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
         return "http://127.0.0.1:5000";
     }
-
-    // 2. GitHub Codespaces Logic
     if (window.location.hostname.includes('app.github.dev')) {
         let host = window.location.hostname;
-        return `https://${host.replace(/-\d+/, '-5000')}`; 
+        return `https://${host.replace(/-\d+/, '-5000')}`;
     }
-
-    // 3. Fallback (if deployed normally)
     return window.location.origin;
 };
 const API_URL = getApiUrl();
 
-    const loginForm = document.getElementById('login-form');
-
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // This can be either email or username
-        const login_id = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            const response = await fetch(`${API_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: login_id, password: password })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                localStorage.setItem('currentUser', data.user); // Username
-                localStorage.setItem('userEmail', data.email);   // Email
-                localStorage.setItem('userStreak', data.streak);
-                localStorage.setItem('userTime', data.total_time);
-                localStorage.setItem('authToken', data.token);
-                
-                window.location.href = "dashboard.html";
-            } else {
-                alert(data.message);
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Server connection error.");
+/* ── Login submit ── */
+const loginForm = document.getElementById('login-form');
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login_id = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: login_id, password: password })
+        });
+        const data = await response.json();
+        if (data.success) {
+            localStorage.setItem('currentUser', data.user);
+            localStorage.setItem('userEmail', data.email);
+            localStorage.setItem('userStreak', data.streak);
+            localStorage.setItem('userTime', data.total_time);
+            localStorage.setItem('authToken', data.token);
+            window.location.href = "dashboard.html";
+        } else {
+            alert(data.message);
         }
-    });
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Server connection error.");
+    }
+});
+
+/* ── Typing effect ── */
+const phrases = [
+    'Learn your way.',
+    'Adaptive tools for neurodivergent learners.',
+    'Smarter, calmer, better learning.'
+];
+let pi = 0, ci = 0, deleting = false;
+const typEl = document.getElementById('typing-text');
+
+function type() {
+    const word = phrases[pi];
+    if (!deleting) {
+        typEl.textContent = word.slice(0, ++ci);
+        if (ci === word.length) { deleting = true; setTimeout(type, 1800); return; }
+    } else {
+        typEl.textContent = word.slice(0, --ci);
+        if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; }
+    }
+    setTimeout(type, deleting ? 42 : 70);
+}
+window.onload = type;
+
+/* ── Blue bubbles across full page ── */
+const bubbles = [
+    [110, 4,   0,  22, 0.55],
+    [60,  11,  3,  16, 0.45],
+    [80,  19,  7,  20, 0.50],
+    [40,  27,  1,  13, 0.40],
+    [130, 35,  9,  25, 0.40],
+    [55,  44,  5,  17, 0.50],
+    [90,  52,  2,  21, 0.45],
+    [45,  61,  11, 14, 0.55],
+    [100, 69,  4,  23, 0.40],
+    [65,  77,  8,  18, 0.45],
+    [85,  85,  6,  20, 0.50],
+    [50,  92,  13, 15, 0.40],
+    [35,  23,  15, 12, 0.35],
+    [75,  58,  10, 19, 0.45],
+    [120, 96,  2,  24, 0.35],
+];
+
+const container = document.getElementById('main-container');
+bubbles.forEach(([size, left, delay, dur, opa]) => {
+    const el = document.createElement('div');
+    el.className = 'bubble';
+
+    const style = Math.random();
+    let bg, border;
+    if (style < 0.33) {
+        bg     = `rgba(45,125,210,${(opa * 0.55).toFixed(2)})`;
+        border = `1.5px solid rgba(45,125,210,${(opa * 0.7).toFixed(2)})`;
+    } else if (style < 0.66) {
+        bg     = `rgba(91,163,245,${(opa * 0.40).toFixed(2)})`;
+        border = `1.5px solid rgba(91,163,245,${(opa * 0.65).toFixed(2)})`;
+    } else {
+        bg     = `transparent`;
+        border = `1.5px solid rgba(45,125,210,${(opa * 0.55).toFixed(2)})`;
+    }
+
+    el.style.cssText = [
+        `width:${size}px`,
+        `height:${size}px`,
+        `left:${left}%`,
+        `animation-duration:${dur}s`,
+        `animation-delay:-${delay}s`,
+        `background:${bg}`,
+        `border:${border}`,
+    ].join(';');
+
+    container.appendChild(el);
+});
 </script>
-    
+
 </body>
 </html>
