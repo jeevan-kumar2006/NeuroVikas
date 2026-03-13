@@ -1,0 +1,6 @@
+Flask
+Flask-CORS
+Pillow
+pytesseract
+PyPDF2
+fpdf
