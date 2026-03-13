@@ -33,7 +33,7 @@ CORS(app)
 
 # --- CONFIGURATION ---
 DB_NAME = 'users.db'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 
 # --- DATABASE SETUP ---
