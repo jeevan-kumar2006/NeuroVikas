@@ -1,1 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroVikas | Neuro-Adaptive Learning</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lexend:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
 
+    <!-- Left Control Sidebar -->
+    <nav class="control-panel">
+        <div class="logo">NeuroVikas</div>
+        <p class="tagline">Adapt the interface to your mind.</p>
+
+        <div class="control-group">
+            <h3>Profile Selection</h3>
+            <div class="btn-group">
+                <button onclick="setMode('default')" class="btn btn-outline" id="btn-default">Standard</button>
+                <button onclick="setMode('dyslexia')" class="btn btn-outline" id="btn-dyslexia">Dyslexia Friendly</button>
+                <button onclick="setMode('adhd')" class="btn btn-outline" id="btn-adhd">ADHD Focus</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Reading Tools</h3>
+            <label class="toggle-label">
+                <span>Bionic Reading</span>
+                <input type="checkbox" id="toggle-bionic" onchange="toggleBionic(this.checked)">
+                <span class="slider"></span>
+            </label>
+            <label class="toggle-label">
+                <span>Focus Mode</span>
+                <input type="checkbox" id="toggle-focus" onchange="toggleFocusMask(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <h3>Content Complexity</h3>
+            <select id="complexity-select" onchange="changeComplexity(this.value)">
+                <option value="academic">Academic (Original)</option>
+                <option value="simplified">Simplified (Easy Read)</option>
+            </select>
+        </div>
+
+        <div class="control-group distress-section">
+            <button class="btn btn-distress" onclick="triggerBreak()">
+                😓 I'm overwhelmed
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area (Shifted Left) -->
+    <main class="content-area" id="content-area">
+        
+        <!-- Focus Mask Overlay -->
+        <div class="focus-mask" id="focus-mask"></div>
+
+        <!-- INPUT VIEW -->
+        <section class="input-view" id="input-view">
+            <h1>Transform Your Content</h1>
+            <p>Paste text or upload a file (PDF/Image) to begin.</p>
+            
+            <!-- Upload Buttons -->
+            <div class="upload-section">
+                <label class="upload-btn" title="Max file size: 16MB">
+                    📄 Upload PDF
+                    <input type="file" id="pdf-input" accept=".pdf" hidden onchange="handleFileUpload(this)">
+                </label>
+                <label class="upload-btn" title="Max file size: 16MB">
+                    📷 Upload Image (OCR)
+                    <input type="file" id="img-input" accept="image/*" hidden onchange="handleFileUpload(this)">
+                </label>
+            </div>
+
+            <textarea id="user-input" placeholder="Paste text here..."></textarea>
+            
+            <div class="input-actions">
+                <button class="btn btn-primary" onclick="processText()">Adapt & Transform</button>
+            </div>
+        </section>
+
+        <!-- RESULT VIEW (Hidden initially) -->
+        <article class="article-container hidden" id="article-container">
+            <header>
+                <h1 id="article-title">Processed Content</h1>
+                <div class="meta-bar">
+                    <span class="tag" id="meta-complexity">Analyzing...</span>
+                    <span class="reading-time" id="meta-time">0 min read</span>
+                </div>
+            </header>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <button class="btn btn-icon" onclick="toggleSpeech()">🔊 Read Aloud</button>
+                <button class="btn btn-icon" onclick="downloadText()">📥 Download TXT</button>
+                <button class="btn btn-icon" onclick="downloadPDF()">📥 Download PDF</button>
+            </div>
+
+            <!-- Content Blocks -->
+            <section class="content-block" id="content-academic"></section>
+            <section class="content-block hidden" id="content-simplified"></section>
+
+            <!-- Visual Aid -->
+            <aside class="visual-summary" id="visual-summary">
+                <div class="card">
+                    <div class="icon">💡</div>
+                    <div class="text">Key Concepts extracted dynamically</div>
+                </div>
+            </aside>
+        </article>
+    </main>
+
+    <!-- NEW: Right Sidebar (Profile & History) -->
+    <aside class="right-sidebar">
+        <!-- Profile Widget -->
+        <div class="profile-widget">
+            <a href="dashboard.html" class="profile-link">
+                <img src="defprofile.png" alt="Profile" class="profile-pic">
+                <div class="profile-info">
+                    <span class="profile-name" id="sidebar-username">Guest</span>
+                    <span class="profile-view">View Dashboard ↗</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <h3>Chat History</h3>
+            <ul id="history-list" class="history-list">
+                <li class="history-empty">No history yet.</li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Distress Modal -->
+    <div class="modal-overlay hidden" id="distress-modal" onclick="closeBreak()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>Let's take a breath.</h2>
+            <p>Focus on the circle.</p>
+            <div class="breathing-circle"></div>
+            <button class="btn btn-primary" onclick="closeBreak()">I'm ready</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
