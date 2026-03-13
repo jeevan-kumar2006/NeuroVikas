@@ -225,6 +225,19 @@ textarea#user-input:focus { border-color: var(--accent); outline: none; }
     transform: translateY(0);
 }
 
+.upload-btn.recording {
+    background: linear-gradient(135deg, #fff0f0 0%, #ffebeb 100%);
+    border-color: #ef9a9a;
+    color: #d32f2f;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(211, 47, 47, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+}
+
 /* Reading View */
 .article-container {
     width: 100%;
@@ -277,7 +290,10 @@ textarea#user-input:focus { border-color: var(--accent); outline: none; }
         inset 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.btn-back { background: none; border: none; color: var(--accent); cursor: pointer; font-weight: 600; margin-bottom: 1rem; }
+/* related resource: style.css:293:1 */
+.btn-back { /* the element was a.btn-back */
+  display: none;
+}
 h1 { font-size: 2.2rem; line-height: 1.2; margin-bottom: 1rem; }
 .meta-bar { display: flex; gap: 1rem; margin-bottom: 2rem; color: #666; font-size: 0.9rem; }
 p { font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.5rem; }
@@ -376,7 +392,7 @@ body.mode-adhd .input-view {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
 }
 
-body.mode-adhd .visual-summary { display: flex; }
+body.mode-adhd .visual-summary { display: none !important; }
 
 /* Floating ADHD Exit Button */
 .adhd-exit-btn {
