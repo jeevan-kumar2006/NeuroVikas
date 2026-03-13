@@ -55,8 +55,9 @@
     <!-- Main Content Area (Shifted Left) -->
     <main class="content-area" id="content-area">
         
-        <!-- Focus Mask Overlay -->
-        <div class="focus-mask" id="focus-mask"></div>
+        <!-- Focus Mask Overlays (Top & Bottom dark slabs) -->
+        <div class="focus-mask-top" id="focus-mask-top"></div>
+        <div class="focus-mask-bottom" id="focus-mask-bottom"></div>
 
         <!-- INPUT VIEW -->
         <section class="input-view" id="input-view">
@@ -114,21 +115,24 @@
     </main>
 
     <!-- NEW: Right Sidebar (Profile & History) -->
-<aside class="right-sidebar">
-    <!-- Profile Widget -->
-    <div class="profile-widget">
-        <a href="dashboard.html" class="profile-link">
-            <img src="defprofile.jpeg" alt="Profile" class="profile-pic"> <!-- UPDATED TO .jpeg -->
-            <div class="profile-info">
-                <span class="profile-name" id="sidebar-username">Guest</span>
-                <span class="profile-view">View Dashboard ↗</span>
-            </div>
-        </a>
-    </div>
+    <aside class="right-sidebar">
+        <!-- Profile Widget -->
+        <div class="profile-widget">
+            <a href="dashboard.html" class="profile-link">
+                <img src="defprofile.jpeg" alt="Profile" class="profile-pic">
+                <div class="profile-info">
+                    <span class="profile-name" id="sidebar-username">Guest</span>
+                    <span class="profile-view">View Dashboard ↗</span>
+                </div>
+            </a>
+        </div>
 
         <!-- History Section -->
         <div class="history-section">
-            <h3>Chat History</h3>
+            <div class="history-header">
+                <h3>Chat History</h3>
+                <button class="btn-clear-history" onclick="clearHistory()">Clear</button>
+            </div>
             <ul id="history-list" class="history-list">
                 <li class="history-empty">No history yet.</li>
             </ul>
@@ -145,7 +149,9 @@
         </div>
     </div>
 
+    <!-- Exit ADHD Mode Button (Floating) -->
+    <button class="adhd-exit-btn hidden" id="adhd-exit-btn" onclick="setMode('default')">❌ Exit ADHD Focus</button>
+
     <script src="script.js"></script>
 </body>
 </html>
-
