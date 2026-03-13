@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | NeuroVikas</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="logo">NeuroVikas</div>
+        <div class="nav-right">
+            <!-- Display Username in Nav -->
+            <span id="nav-username">User</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <header class="welcome-header">
+            <!-- Display Username in Title -->
+            <h1>Welcome back, <span id="dash-user">Learner</span>!</h1>
+            <!-- Display Email below title -->
+            <p id="dash-email-display" class="subtitle">Loading email...</p>
+        </header>
+
+        <div class="stats-grid">
+            <!-- Streak Card -->
+            <div class="stat-card streak-card">
+                <div class="card-icon">🔥</div>
+                <div class="card-info">
+                    <h2 id="dash-streak">0</h2>
+                    <p>Day Streak</p>
+                </div>
+                <div class="card-footer">Keep it going!</div>
+            </div>
+
+            <!-- Time Card -->
+            <div class="stat-card time-card">
+                <div class="card-icon">⏱️</div>
+                <div class="card-info">
+                    <h2 id="dash-time">0</h2>
+                    <p>Minutes Learned</p>
+                </div>
+                <div class="card-footer">Great progress!</div>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            <a href="index.html" class="btn-primary-large">
+                Start Learning Session
+            </a>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in
+        const user = localStorage.getItem('currentUser');
+        const email = localStorage.getItem('userEmail');
+        
+        if (!user) {
+            // If no user found, redirect to login
+            window.location.href = "login.html";
+        } else {
+            // Load stats
+            const streak = localStorage.getItem('userStreak') || 0;
+            const time = localStorage.getItem('userTime') || 0;
+
+            // Update HTML elements
+            document.getElementById('dash-user').innerText = user;
+            document.getElementById('nav-username').innerText = user;
+            
+            // Update Email Display
+            if (email) {
+                document.getElementById('dash-email-display').innerText = email;
+            } else {
+                document.getElementById('dash-email-display').innerText = "Guest Mode";
+            }
+
+            document.getElementById('dash-streak').innerText = streak;
+            
+            // Convert seconds to minutes for display
+            document.getElementById('dash-time').innerText = Math.round(time / 60);
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+</html>
