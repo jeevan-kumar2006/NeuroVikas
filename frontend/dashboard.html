@@ -86,7 +86,13 @@
         }
 
         function logout() {
-            localStorage.clear();
+            // Only clear auth-related keys — preserve chatHistory and preferredMode
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userStreak');
+            localStorage.removeItem('userTime');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('guestUsageCount');
             window.location.href = "login.html";
         }
     </script>
