@@ -35,6 +35,15 @@ const distressModal = document.getElementById('distress-modal');
 document.addEventListener('DOMContentLoaded', () => {
     const resultData = sessionStorage.getItem('currentResult');
     
+    // --- Load User & History ---
+    const user = localStorage.getItem('currentUser');
+    if (user) {
+        // Update Sidebar Username
+        const sidebarUser = document.getElementById('sidebar-username');
+        if (sidebarUser) sidebarUser.innerText = user;
+    }
+    loadHistory();
+
     if (!resultData) {
         alert("No text data found. Redirecting...");
         window.location.href = "index.html";
@@ -46,15 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render UI
     document.getElementById('meta-time').innerText = Math.ceil(data.wordCount / 200) + " min read";
     document.getElementById('meta-complexity').innerText = data.complexity;
-    
     renderContent(data.originalText, data.summaryPoints);
     
-    // Apply Recommendations
-    setMode(data.recommendedMode);
-    if (data.recommendedMode === 'dyslexia') {
-        document.getElementById('toggle-bionic').checked = true;
-        toggleBionic(true);
-    }
+    // Apply User's Preferred Mode instead of forcing Recommendations
+    const savedMode = localStorage.getItem('preferredMode') || 'default';
+    setMode(savedMode);
 });
 
 // ==========================================
@@ -81,20 +86,41 @@ function renderContent(text, summaryPoints) {
 function setMode(mode) {
     body.classList.remove('mode-dyslexia', 'mode-adhd');
     document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-${mode}`).classList.add('active');
+    const modeBtn = document.getElementById(`btn-${mode}`);
+    if (modeBtn) modeBtn.classList.add('active');
     state.mode = mode;
 
+    const bionicToggle = document.getElementById('toggle-bionic');
+    const focusToggle  = document.getElementById('toggle-focus');
+    const adhdExitBtn  = document.getElementById('adhd-exit-btn');
+
+    // --- Dyslexia Mode ---
     if (mode === 'dyslexia') {
         body.classList.add('mode-dyslexia');
-        const bionicToggle = document.getElementById('toggle-bionic');
-        if (bionicToggle && !bionicToggle.checked) {
-            bionicToggle.checked = true;
-            toggleBionic(true);
-        }
+        // Always force Bionic Reading ON
+        if (bionicToggle) { bionicToggle.checked = true; }
+        toggleBionic(true);
+    } else {
+        // Turn Bionic Reading OFF when leaving dyslexia
+        if (bionicToggle) { bionicToggle.checked = false; }
+        toggleBionic(false);
     }
-    else if (mode === 'adhd') {
+
+    // --- ADHD Mode ---
+    if (mode === 'adhd') {
         body.classList.add('mode-adhd');
+        // Always force Focus Mask ON
+        if (focusToggle) { focusToggle.checked = true; }
+        toggleFocusMask(true);
+        if (adhdExitBtn) adhdExitBtn.classList.remove('hidden');
+    } else {
+        // Turn Focus Mask OFF when leaving adhd
+        if (focusToggle) { focusToggle.checked = false; }
+        toggleFocusMask(false);
+        if (adhdExitBtn) adhdExitBtn.classList.add('hidden');
     }
+
+    localStorage.setItem('preferredMode', mode);
 }
 
 function toggleBionic(isActive) {
@@ -262,3 +288,74 @@ async function downloadPDF(event) {
 // Modal
 function triggerBreak() { distressModal.classList.remove('hidden'); }
 function closeBreak() { distressModal.classList.add('hidden'); }
+
+// ==========================================
+// HISTORY & PROFILE FUNCTIONS
+// ==========================================
+
+function loadHistory() {
+    const list = document.getElementById('history-list');
+    if (!list) return;
+
+    const user = localStorage.getItem('currentUser') || 'Guest';
+    if (user === 'Guest') {
+        list.innerHTML = '<li class="history-empty" style="font-style: italic;">Log in to save history</li>';
+        return;
+    }
+
+    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+
+    if (history.length === 0) {
+        list.innerHTML = '<li class="history-empty">No history yet.</li>';
+        return;
+    }
+
+    list.innerHTML = history.map((item, index) => {
+        const text = typeof item === 'string' ? item : item.text;
+        const displayText = text.substring(0, 30) + '...';
+        return `<li onclick="loadFromHistory(${index})" title="${text.substring(0, 80)}">${displayText}</li>`;
+    }).join('');
+}
+
+function loadFromHistory(index) {
+    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    const item = history[index];
+    if (!item) return;
+
+    const result = typeof item === 'string' ? null : item.result;
+    const text   = typeof item === 'string' ? item  : item.text;
+
+    if (result) {
+        // Load the saved result directly into the current result page
+        sessionStorage.setItem('currentResult', JSON.stringify(result));
+        window.location.reload();
+    } else {
+        // Older entry — go back to index with the text pre-loaded
+        sessionStorage.setItem('loadedHistoryText', text);
+        window.location.href = 'index.html';
+    }
+}
+
+function clearHistory() {
+    if (confirm("Are you sure you want to delete your chat history?")) {
+        localStorage.removeItem('chatHistory');
+        loadHistory();
+        syncHistoryToDB();
+    }
+}
+
+async function syncHistoryToDB() {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+    
+    try {
+        await fetch(`${API_URL}/api/sync_history`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                token: token, 
+                chat_history: localStorage.getItem('chatHistory') || '[]' 
+            })
+        });
+    } catch(e) { console.log('History sync failed', e); }
+}
