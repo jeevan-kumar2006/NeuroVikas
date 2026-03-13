@@ -1,477 +1,195 @@
-// ==========================================
-// CONFIGURATION & STATE
-// ==========================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up | NeuroVikas</title>
+<link rel="stylesheet" href="login.css">
+</head>
 
-// Dynamic URL Configuration
+<body>
+
+<div class="login-container" id="main-container">
+
+  <!-- LEFT: Brand Panel -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <h1>Neuro<span>Vikas</span></h1>
+      <p id="typing-text"></p>
+    </div>
+
+
+  </div>
+
+
+
+  <!-- RIGHT: Form Panel -->
+  <div class="form-panel">
+    <div class="form-wrapper">
+
+      <div class="mobile-logo">NeuroVikas</div>
+
+      <h2>Create Account</h2>
+      <p class="subtitle">Sign up to start your learning journey.</p>
+
+      <form id="signup-form">
+
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" id="su-username" placeholder="Choose a username" required>
+        </div>
+
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="su-email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="input-group">
+          <label>Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="su-password" placeholder="Create a password" required autocomplete="new-password">
+            <button type="button" class="pwd-toggle" onclick="togglePwd('su-password', this)" tabindex="-1" aria-label="Show password">
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.5rem;">
+          Create Account
+        </button>
+
+      </form>
+
+      <div class="divider"><span>or</span></div>
+
+      <a href="login.html" class="btn btn-outline btn-full">I already have an account</a>
+      <a href="index.html" class="btn btn-outline btn-full" style="opacity:0.6; margin-top:0.6rem;">Continue as Guest</a>
+
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── API URL ── */
 const getApiUrl = () => {
-    // 1. Local VS Code Development or Direct File Access
-    if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '') {
-        return "http://127.0.0.1:5000";
-    }
-
-    // 2. GitHub Codespaces Logic
-    if (window.location.hostname.includes('app.github.dev')) {
-        let host = window.location.hostname;
-        return `https://${host.replace(/-\d+/, '-5000')}`; 
-    }
-
-    // 3. Fallback (if deployed normally)
-    return window.location.origin;
+  const h = window.location.hostname;
+  if (h === '127.0.0.1' || h === 'localhost') return 'http://127.0.0.1:5000';
+  if (h.includes('app.github.dev')) return `https://${h.replace(/-\d+/, '-5000')}`;
+  return window.location.origin;
 };
 const API_URL = getApiUrl();
 
-let currentUser = localStorage.getItem('currentUser') || 'Guest';
-let startTime = Date.now();
-
-// DOM Elements - lazy getters so they're always resolved after DOM is ready
-const body = document.body;
-let focusMaskTop, focusMaskBottom, distressModal;
-
-function getEl(id) { return document.getElementById(id); }
-
-// ==========================================
-// INITIALIZATION
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Resolve DOM elements now that the DOM is fully ready
-    focusMaskTop    = getEl('focus-mask-top');
-    focusMaskBottom = getEl('focus-mask-bottom');
-    distressModal   = getEl('distress-modal');
-
-    // --- Load User & History FIRST so it always renders ---
-    const user = localStorage.getItem('currentUser');
-    if (user) {
-        const sidebarUser = getEl('sidebar-username');
-        if (sidebarUser) sidebarUser.innerText = user;
+/* ── Signup submit ── */
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('su-username').value;
+  const email    = document.getElementById('su-email').value;
+  const password = document.getElementById('su-password').value;
+  try {
+    const res  = await fetch(`${API_URL}/api/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message + ' Please login now.');
+      window.location.href = 'login.html';
+    } else {
+      alert(data.message);
     }
-    loadHistory();
-
-    // Apply the user's saved mode
-    const savedMode = localStorage.getItem('preferredMode') || 'default';
-    setMode(savedMode);
-
-    // Catch history redirects from result page
-    const historyTextToLoad = sessionStorage.getItem('loadedHistoryText');
-    if (historyTextToLoad) {
-        const inputEl = getEl('user-input');
-        if (inputEl) inputEl.value = historyTextToLoad;
-        sessionStorage.removeItem('loadedHistoryText');
-    }
+  } catch (err) {
+    alert('Could not connect to server.');
+  }
 });
 
-// ==========================================
-// CORE PROCESSING & REDIRECT
-// ==========================================
-async function processText() {
-    const rawText = document.getElementById('user-input').value.trim();
-    if (!rawText) return alert("Please enter some text first!");
-
-    // Check Guest Limit
-    const user = localStorage.getItem('currentUser') || 'Guest';
-    if (user === 'Guest') {
-        let guestUsageCount = parseInt(localStorage.getItem('guestUsageCount') || '0');
-        if (guestUsageCount >= 3) {
-            alert("You have reached your limit of 3 free uploads. Please log in or create an account to continue!");
-            return;
-        }
-        localStorage.setItem('guestUsageCount', guestUsageCount + 1);
-    }
-
-    // 1. UI Loading State
-    document.querySelector('.input-actions').innerHTML = "Analyzing...";
-
-    try {
-        // 3. Analyze
-        const analyzeRes = await fetch(`${API_URL}/api/analyze`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text: rawText })
-        });
-        const analysisData = await analyzeRes.json();
-
-        // 4. Simplify
-        const simplifyRes = await fetch(`${API_URL}/api/simplify`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text: rawText })
-        });
-        const simplifyData = await simplifyRes.json();
-
-        // 5. Save data to Session Storage
-        const resultPayload = {
-            originalText: rawText,
-            summaryPoints: simplifyData.summary,
-            wordCount: analysisData.wordCount,
-            complexity: analysisData.complexity,
-            recommendedMode: analysisData.recommendedMode
-        };
-        
-        // 5. Save history NOW with the full result, then redirect
-        saveToHistory(rawText, resultPayload);
-
-        sessionStorage.setItem('currentResult', JSON.stringify(resultPayload));
-
-        // 6. Redirect to Result Page
-        window.location.href = "result.html";
-
-    } catch (error) {
-        console.error("Backend connection failed", error);
-        alert("Error connecting to Python Backend.");
-        document.querySelector('.input-actions').innerHTML = '<button class="btn btn-primary" onclick="processText()">Adapt & Transform</button>';
-    }
+/* ── Password toggle ── */
+function togglePwd(inputId, btn) {
+    const input      = document.getElementById(inputId);
+    const eyeIcon    = btn.querySelector('.eye-icon');
+    const eyeOffIcon = btn.querySelector('.eye-off-icon');
+    const showing    = input.type === 'password';
+    input.type = showing ? 'text' : 'password';
+    eyeIcon.style.display    = showing ? 'none' : '';
+    eyeOffIcon.style.display = showing ? ''     : 'none';
+    btn.setAttribute('aria-label', showing ? 'Hide password' : 'Show password');
 }
 
-// ==========================================
-// FILE UPLOAD
-// ==========================================
-async function handleFileUpload(input) {
-    const file = input.files[0];
-    if (!file) return;
+/* ── Typing effect ── */
+const phrases = [
+ 'Learn your way.',
+ 'Adaptive tools for neurodivergent learners.',
+ 'Smarter, calmer, better learning.'
+];
+let pi = 0, ci = 0, deleting = false;
+const typEl = document.getElementById('typing-text');
 
-    // Check Guest Limit
-    const user = localStorage.getItem('currentUser') || 'Guest';
-    if (user === 'Guest') {
-        let guestUsageCount = parseInt(localStorage.getItem('guestUsageCount') || '0');
-        if (guestUsageCount >= 3) {
-            alert("You have reached your limit of 3 free uploads. Please log in or create an account to continue!");
-            input.value = ''; // clear input
-            return;
-        }
-        localStorage.setItem('guestUsageCount', guestUsageCount + 1);
-    }
-
-    document.getElementById('user-input').value = "Processing file...";
-    
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch(`${API_URL}/api/upload`, {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            document.getElementById('user-input').value = data.text;
-            alert("File processed! Click 'Adapt & Transform' to continue.");
-        } else {
-            alert("Error: " + data.message);
-            document.getElementById('user-input').value = "";
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Upload failed. Is the backend running?");
-    }
+function type() {
+  const word = phrases[pi];
+  if (!deleting) {
+    typEl.textContent = word.slice(0, ++ci);
+    if (ci === word.length) { deleting = true; setTimeout(type, 1800); return; }
+  } else {
+    typEl.textContent = word.slice(0, --ci);
+    if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; }
+  }
+  setTimeout(type, deleting ? 42 : 70);
 }
+window.onload = type;
 
-// ==========================================
-// SPEECH TO TEXT (DICTATION)
-// ==========================================
-let recognition;
-let isDictating = false;
+/* ── Blue bubbles across full page ── */
+const bubbles = [
+  /* size, left%, neg-delay, duration, opacity-max, blur */
+  [110, 4,   0,  22, 0.55, 0],
+  [60,  11,  3,  16, 0.45, 0],
+  [80,  19,  7,  20, 0.50, 0],
+  [40,  27,  1,  13, 0.40, 0],
+  [130, 35,  9,  25, 0.40, 0],
+  [55,  44,  5,  17, 0.50, 0],
+  [90,  52,  2,  21, 0.45, 0],
+];
 
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        console.warn("Speech Recognition API not supported in this browser.");
-        return null;
-    }
-    const rec = new SpeechRecognition();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = 'en-US';
+const container = document.getElementById('main-container');
+bubbles.forEach(([size, left, delay, dur, opa]) => {
+  const el = document.createElement('div');
+  el.className = 'bubble';
 
-    rec.onstart = () => {
-        isDictating = true;
-        const btn = document.getElementById('dictate-btn');
-        if (btn) {
-            btn.innerHTML = '🔴 Recording...';
-            btn.style.color = '#ff4d4d';
-            btn.style.borderColor = '#ff4d4d';
-        }
-    };
+  /* alternating fill styles for depth */
+  const style = Math.random();
+  let bg, border;
+  if (style < 0.33) {
+    bg = `rgba(45,125,210,${(opa * 0.55).toFixed(2)})`;
+    border = `1.5px solid rgba(45,125,210,${(opa * 0.7).toFixed(2)})`;
+  } else if (style < 0.66) {
+    bg = `rgba(91,163,245,${(opa * 0.40).toFixed(2)})`;
+    border = `1.5px solid rgba(91,163,245,${(opa * 0.65).toFixed(2)})`;
+  } else {
+    bg = `transparent`;
+    border = `1.5px solid rgba(45,125,210,${(opa * 0.55).toFixed(2)})`;
+  }
 
-    rec.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript + ' ';
-            }
-        }
-        if (finalTranscript) {
-            const input = document.getElementById('user-input');
-            input.value = input.value ? input.value + (input.value.endsWith(' ') ? '' : ' ') + finalTranscript : finalTranscript;
-        }
-    };
+  el.style.cssText = [
+    `width:${size}px`,
+    `height:${size}px`,
+    `left:${left}%`,
+    `animation-duration:${dur}s`,
+    `animation-delay:-${delay}s`,
+    `background:${bg}`,
+    `border:${border}`,
+  ].join(';');
 
-    rec.onerror = (event) => {
-        console.error("Speech recognition error", event.error);
-        stopDictation();
-    };
+  container.appendChild(el);
+});
+</script>
 
-    rec.onend = () => {
-        // Automatically stopped
-        if (isDictating) {
-           stopDictation();
-        }
-    };
-
-    return rec;
-}
-
-function stopDictation() {
-    if (recognition && isDictating) {
-        recognition.stop();
-    }
-    isDictating = false;
-    const btn = document.getElementById('dictate-btn');
-    if (btn) {
-        btn.innerHTML = '🎤 Speech to Text';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-    }
-}
-
-function toggleDictation() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Your browser does not support Speech Recognition. Please try Google Chrome or Edge.");
-        return;
-    }
-
-    if (!recognition) {
-        recognition = initSpeechRecognition();
-    }
-
-    if (isDictating) {
-        stopDictation();
-    } else {
-        try {
-            recognition.start();
-        } catch (e) {
-            console.error(e);
-            stopDictation();
-        }
-    }
-}
-
-// ==========================================
-// HISTORY & PROFILE FUNCTIONS
-// ==========================================
-
-function saveToHistory(text, resultPayload) {
-    if (!text || text.length < 20) return;
-
-    const user = localStorage.getItem('currentUser') || 'Guest';
-    if (user === 'Guest') return; // No history for guests
-
-    let history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-    
-    // Avoid exact duplicate of most recent item
-    if (!history.length || history[0].text !== text) {
-        history.unshift({ text: text, result: resultPayload || null });
-        if (history.length > 5) history.pop();
-        localStorage.setItem('chatHistory', JSON.stringify(history));
-        loadHistory();
-        syncHistoryToDB();
-    }
-}
-
-async function syncHistoryToDB() {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-    
-    try {
-        await fetch(`${API_URL}/api/sync_history`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                token: token, 
-                chat_history: localStorage.getItem('chatHistory') || '[]' 
-            })
-        });
-    } catch(e) { console.log('History sync failed', e); }
-}
-
-function loadHistory() {
-    const list = getEl('history-list');
-    if (!list) return;
-
-    const user = localStorage.getItem('currentUser') || 'Guest';
-    if (user === 'Guest') {
-        list.innerHTML = '<li class="history-empty" style="font-style: italic;">Log in to save history</li>';
-        return;
-    }
-
-    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-
-    if (history.length === 0) {
-        list.innerHTML = '<li class="history-empty">No history yet.</li>';
-        return;
-    }
-
-    list.innerHTML = history.map((item, index) => {
-        // Support both old format (string) and new format (object)
-        const text = typeof item === 'string' ? item : item.text;
-        const displayText = text.substring(0, 30) + '...';
-        return `<li onclick="loadFromHistory(${index})" title="${text.substring(0, 80)}">${displayText}</li>`;
-    }).join('');
-}
-
-function loadFromHistory(index) {
-    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-    const item = history[index];
-    if (!item) return;
-
-    // Support both old string format and new object format
-    const result = typeof item === 'string' ? null : item.result;
-    const text   = typeof item === 'string' ? item  : item.text;
-
-    if (result) {
-        // We have the saved result — navigate directly to the result page
-        sessionStorage.setItem('currentResult', JSON.stringify(result));
-        window.location.href = 'result.html';
-    } else {
-        // Older entry without saved result — just populate the textarea
-        const inputEl = getEl('user-input');
-        if (inputEl) inputEl.value = text;
-        window.scrollTo(0, 0);
-    }
-}
-
-function clearHistory() {
-    if (confirm("Are you sure you want to delete your chat history?")) {
-        localStorage.removeItem('chatHistory');
-        loadHistory();
-        syncHistoryToDB();
-    }
-}
-
-// ==========================================
-// MODE SWITCHING
-// ==========================================
-function setMode(mode) {
-    body.classList.remove('mode-dyslexia', 'mode-adhd');
-    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
-    const modeBtn = document.getElementById(`btn-${mode}`);
-    if (modeBtn) modeBtn.classList.add('active');
-
-    const bionicToggle = document.getElementById('toggle-bionic');
-    const focusToggle  = document.getElementById('toggle-focus');
-    const adhdExitBtn  = document.getElementById('adhd-exit-btn');
-
-    // --- Dyslexia Mode ---
-    if (mode === 'dyslexia') {
-        body.classList.add('mode-dyslexia');
-        if (bionicToggle) { bionicToggle.checked = true; }
-        // toggleBionic only exists on result.js — guard safely
-        if (typeof toggleBionic === 'function') toggleBionic(true);
-    } else {
-        if (bionicToggle) { bionicToggle.checked = false; }
-        if (typeof toggleBionic === 'function') toggleBionic(false);
-    }
-
-    // --- ADHD Mode ---
-    if (mode === 'adhd') {
-        body.classList.add('mode-adhd');
-        // Always force Focus Mask ON
-        if (focusToggle) { focusToggle.checked = true; }
-        toggleFocusMask(true);
-        if (adhdExitBtn) adhdExitBtn.classList.remove('hidden');
-    } else {
-        // Turn Focus Mask OFF when leaving adhd
-        if (focusToggle) { focusToggle.checked = false; }
-        toggleFocusMask(false);
-        if (adhdExitBtn) adhdExitBtn.classList.add('hidden');
-    }
-
-    localStorage.setItem('preferredMode', mode);
-}
-
-function toggleFocusMask(isActive) {
-    // Re-resolve in case they were null at startup
-    if (!focusMaskTop)    focusMaskTop    = getEl('focus-mask-top');
-    if (!focusMaskBottom) focusMaskBottom = getEl('focus-mask-bottom');
-    if (!focusMaskTop || !focusMaskBottom) return; // elements missing, bail out
-
-    if (isActive) {
-        focusMaskTop.classList.add('active');
-        focusMaskBottom.classList.add('active');
-        document.addEventListener('mousemove', moveFocusMask);
-    } else {
-        focusMaskTop.classList.remove('active');
-        focusMaskBottom.classList.remove('active');
-        focusMaskTop.style.height = '0';
-        focusMaskBottom.style.height = '0';
-        document.removeEventListener('mousemove', moveFocusMask);
-    }
-}
-
-function moveFocusMask(e) {
-    const rulerHeight = 120; // bright ruler band height in px
-    const halfRuler = rulerHeight / 2;
-    const mouseY = e.clientY;
-    const windowH = window.innerHeight;
-
-    // Top dark slab: from top to (mouseY - halfRuler)
-    const topH = Math.max(0, mouseY - halfRuler);
-    focusMaskTop.style.height = topH + 'px';
-
-    // Bottom dark slab: from (mouseY + halfRuler) to bottom
-    const bottomTop = Math.min(windowH, mouseY + halfRuler);
-    const bottomH = Math.max(0, windowH - bottomTop);
-    focusMaskBottom.style.top = 'auto';
-    focusMaskBottom.style.height = bottomH + 'px';
-}
-
-// ==========================================
-// TIME TRACKING (Secure)
-// ==========================================
-function triggerBreak() {
-    if (!distressModal) distressModal = getEl('distress-modal');
-    if (distressModal) distressModal.classList.remove('hidden');
-}
-function closeBreak() {
-    if (!distressModal) distressModal = getEl('distress-modal');
-    if (distressModal) distressModal.classList.add('hidden');
-}
-
-// Index-page stub for Bionic Reading toggle
-// (full implementation lives in result.js for the results page)
-function toggleBionic(isActive) {
-    // On the index/upload page there is no article content to transform,
-    // so this is intentionally a no-op. The toggle visual state is managed by CSS.
-}
-
-// Stub so the complexity dropdown doesn't throw on pages without it
-function changeComplexity(level) {}
-
-async function syncTime() {
-    const token = localStorage.getItem('authToken');
-    if (!token) return; // Not logged in
-
-    const endTime = Date.now();
-    const secondsSpent = Math.round((endTime - startTime) / 1000);
-    
-    // Security: Only sync if time is reasonable (between 5s and 60s)
-    if (secondsSpent > 5 && secondsSpent <= 60) {
-        try {
-            const res = await fetch(`${API_URL}/api/update_time`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    token: token, 
-                    seconds: secondsSpent 
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('userTime', data.total_time);
-                startTime = Date.now();
-            }
-        } catch (e) { console.log("Time sync failed"); }
-    }
-}
-setInterval(syncTime, 30000);
-window.addEventListener('beforeunload', syncTime);
+</body>
+</html>
