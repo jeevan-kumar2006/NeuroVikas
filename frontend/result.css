@@ -1,0 +1,27 @@
+.top-bar {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-back {
+    text-decoration: none;
+    color: #666;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #f9f9f9;
+    color: var(--accent);
+    border-color: #ddd;
+}
