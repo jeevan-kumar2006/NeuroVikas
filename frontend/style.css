@@ -33,8 +33,8 @@ body {
     z-index: 100;
 }
 
-.logo { font-weight: 700; font-size: 1.2rem; color: var(--accent); }
-.control-group h3 { font-size: 0.85rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
+.logo { font-weight: 800; font-size: 2.5rem; color: var(--accent); }
+.control-group h3 { font-size: 0.95rem; text-transform: uppercase; color: #888; margin-bottom: 1rem; }
 
 /* ==========================================
    ENHANCED BUTTONS
@@ -64,7 +64,6 @@ body {
 .btn:hover {
     border-color: rgba(74, 144, 226, 0.4);
     color: var(--accent);
-    transform: translateY(-3px);
     box-shadow: 
         0 6px 12px rgba(74, 144, 226, 0.12),
         0 12px 24px rgba(74, 144, 226, 0.08),
@@ -73,7 +72,6 @@ body {
 }
 
 .btn:active {
-    transform: translateY(1px);
     box-shadow: 
         0 1px 2px rgba(0, 0, 0, 0.1),
         inset 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -102,7 +100,6 @@ body {
 
 .btn-primary:hover {
     background: linear-gradient(135deg, #5ca5f6 0%, #2f7acc 100%);
-    transform: translateY(-3px);
     box-shadow: 
         0 8px 20px rgba(74, 144, 226, 0.35),
         0 12px 30px rgba(74, 144, 226, 0.2);
@@ -110,7 +107,6 @@ body {
 }
 
 .btn-primary:active {
-    transform: translateY(1px);
     box-shadow: 
         0 2px 8px var(--accent-glow),
         inset 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -132,7 +128,6 @@ body {
 .btn-distress:hover {
     background: linear-gradient(180deg, #ffebee 0%, #ffcdd2 100%);
     border-color: #ef9a9a;
-    transform: translateY(-3px);
     box-shadow: 
         0 6px 16px rgba(229, 57, 53, 0.15),
         0 12px 24px rgba(229, 57, 53, 0.1);
@@ -140,7 +135,6 @@ body {
 }
 
 .btn-distress:active {
-    transform: translateY(1px);
     box-shadow: 
         0 1px 4px rgba(229, 57, 53, 0.15),
         inset 0 2px 4px rgba(0, 0, 0, 0.08);
@@ -250,7 +244,6 @@ textarea#user-input:focus { border-color: var(--accent); outline: none; }
     background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
     border-color: rgba(74, 144, 226, 0.3);
     color: var(--accent);
-    transform: translateY(-3px);
     box-shadow: 
         0 4px 12px rgba(74, 144, 226, 0.1),
         0 8px 24px rgba(74, 144, 226, 0.08),
@@ -258,7 +251,6 @@ textarea#user-input:focus { border-color: var(--accent); outline: none; }
 }
 
 .btn-icon:active {
-    transform: translateY(1px);
     box-shadow: 
         0 1px 3px rgba(0, 0, 0, 0.08),
         inset 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -339,8 +331,64 @@ body.mode-dyslexia { --bg-color: #fdf6e3; --text-color: #333; }
 body.mode-dyslexia .article-container, body.mode-dyslexia .input-view { font-family: var(--font-readable); letter-spacing: 0.05em; background: #fdf6e3; }
 body.mode-dyslexia p, body.mode-dyslexia textarea { line-height: 2.0; font-size: 1.2rem; }
 
-body.mode-adhd .article-container { border: 2px solid var(--accent); }
+/* Strict ADHD Focus Mode Overrides */
+body.mode-adhd .control-panel,
+body.mode-adhd .right-sidebar,
+body.mode-adhd .top-bar,
+body.mode-adhd .action-bar,
+body.mode-adhd .upload-section {
+    display: none !important;
+}
+
+body.mode-adhd .content-area {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 2rem 5% !important;
+}
+
+body.mode-adhd .article-container,
+body.mode-adhd .input-view {
+    border: 3px solid var(--accent);
+    max-width: 900px;
+    margin: 0 auto;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
 body.mode-adhd .visual-summary { display: flex; }
+
+/* Floating ADHD Exit Button */
+.adhd-exit-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    /* Less saturated slate blue */
+    background: linear-gradient(135deg, #78909c 0%, #546e7a 100%);
+    color: white;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(84, 110, 122, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.adhd-exit-btn.hidden {
+    display: none !important;
+}
+
+.adhd-exit-btn:hover {
+    /* Slightly lighter on hover, no jump */
+    background: linear-gradient(135deg, #8ba4b1 0%, #627e8d 100%);
+    box-shadow: 0 8px 25px rgba(84, 110, 122, 0.5);
+}
+
+.adhd-exit-btn:active {
+    box-shadow: 0 2px 8px rgba(84, 110, 122, 0.2);
+}
 
 .bionic { font-weight: 700; }
 .back-link { text-decoration: none; color: #666; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
@@ -449,7 +497,7 @@ body {
 }
 
 .history-section h3 {
-    font-size: 0.85rem;
+    font-size: 1.35rem;
     text-transform: uppercase;
     color: #888;
     margin: 0;
