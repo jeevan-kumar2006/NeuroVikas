@@ -55,9 +55,15 @@
     <!-- Main Content Area (Shifted Left) -->
     <main class="content-area" id="content-area">
         
-        <!-- Focus Mask Overlays (Top & Bottom dark slabs) -->
+        <!-- Focus Mask Overlays (Top, Bottom dark slabs, and bright ruler) -->
         <div class="focus-mask-top" id="focus-mask-top"></div>
+        <div class="focus-mask-ruler" id="focus-mask-ruler"></div>
         <div class="focus-mask-bottom" id="focus-mask-bottom"></div>
+
+        <!-- Top Action Bar -->
+        <div class="top-bar">
+            <a href="dashboard.html" class="btn-back">← Dashboard</a>
+        </div>
 
         <!-- INPUT VIEW -->
         <section class="input-view" id="input-view">
@@ -74,8 +80,8 @@
                     📷 Upload Image (OCR)
                     <input type="file" id="img-input" accept="image/*" hidden onchange="handleFileUpload(this)">
                 </label>
-                <button class="upload-btn" id="dictate-btn" onclick="toggleDictation()" title="Speech to Text">
-                    🎤 Speech to Text
+                <button class="upload-btn stt-btn" id="stt-btn" onclick="toggleSTT(event)" title="Dictate Text">
+                    🎤 Dictate
                 </button>
             </div>
 
