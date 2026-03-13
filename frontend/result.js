@@ -77,7 +77,7 @@ function renderContent(text, summaryPoints) {
 
     const simplifiedDiv = document.getElementById('content-simplified');
     let listItems = summaryPoints.map(s => `<li>${s}</li>`).join('');
-    simplifiedDiv.innerHTML = '<ul>' + listItems + '</ul>';
+    simplifiedDiv.innerHTML = '<h3>AI Generated Summary</h3><ul>' + listItems + '</ul>';
 }
 
 // ==========================================
@@ -224,31 +224,76 @@ function moveFocusMask(e) {
 // TTS & EXPORT
 // ==========================================
 let synth = window.speechSynthesis;
-const ttsBtn = document.getElementById('tts-btn');
+let currentUtterance = null;
+let ttsResumeInterval = null;
 
 function toggleSpeech() {
-    const content = document.getElementById('content-academic').innerText;
+    const ttsBtn = document.getElementById('tts-btn');
+    if (!ttsBtn) return;
 
-    if (synth.speaking && !synth.paused) {
-        synth.pause();
-        ttsBtn.innerText = "▶️ Resume";
+    const academicDiv = document.getElementById('content-academic');
+    const simplifiedDiv = document.getElementById('content-simplified');
+    
+    let content = "";
+    if (simplifiedDiv && !simplifiedDiv.classList.contains('hidden')) {
+        content = simplifiedDiv.innerText || simplifiedDiv.textContent;
+    } else if (academicDiv) {
+        content = academicDiv.innerText || academicDiv.textContent;
+    }
+
+    // If it is currently playing or paused and button reflects playing state
+    if (!ttsBtn.innerText.includes("Read") && (synth.speaking || synth.paused)) {
+        if (synth.paused) {
+            synth.resume();
+            ttsBtn.innerHTML = "⏸️ Pause";
+        } else {
+            synth.pause();
+            ttsBtn.innerHTML = "▶️ Resume";
+        }
         return;
     }
 
-    if (synth.paused) {
-        synth.resume();
-        ttsBtn.innerText = "⏸️ Pause";
-        return;
-    }
-
+    // Force restart if stuck or simply read aloud clicked
     if (content) {
-        const utterance = new SpeechSynthesisUtterance(content);
-        utterance.rate = 0.9;
-        utterance.onend = () => { ttsBtn.innerText = "🔊 Read Aloud"; };
-        synth.speak(utterance);
-        ttsBtn.innerText = "⏸️ Pause";
+        synth.cancel(); // Clear any stuck state out
+        if (ttsResumeInterval) clearInterval(ttsResumeInterval);
+        
+        setTimeout(() => {
+            currentUtterance = new SpeechSynthesisUtterance(content);
+            currentUtterance.rate = 0.9;
+            currentUtterance.lang = 'en-US';
+
+            currentUtterance.onend = () => { 
+                ttsBtn.innerHTML = "🔊 Read Aloud"; 
+                clearInterval(ttsResumeInterval);
+                currentUtterance = null;
+            };
+            
+            // Handles both error and cancel
+            currentUtterance.onerror = () => {
+                ttsBtn.innerHTML = "🔊 Read Aloud"; 
+                clearInterval(ttsResumeInterval);
+                currentUtterance = null;
+            };
+
+            synth.speak(currentUtterance);
+            ttsBtn.innerHTML = "⏸️ Pause";
+
+            // Workaround for Chrome 15s utterance timeout bug
+            ttsResumeInterval = setInterval(() => {
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    synth.resume();
+                }
+            }, 10000);
+        }, 50); // Small delay to let cancel propagate
     }
 }
+
+// Stop speech on page unload
+window.addEventListener('beforeunload', () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+});
 
 function downloadText() {
     const text = document.getElementById('content-academic').innerText;
@@ -293,6 +338,11 @@ function closeBreak() { distressModal.classList.add('hidden'); }
 // HISTORY & PROFILE FUNCTIONS
 // ==========================================
 
+function getHistoryKey() {
+    const email = localStorage.getItem('userEmail');
+    return email ? 'chatHistory_' + email : 'chatHistory';
+}
+
 function loadHistory() {
     const list = document.getElementById('history-list');
     if (!list) return;
@@ -303,7 +353,7 @@ function loadHistory() {
         return;
     }
 
-    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    const history = JSON.parse(localStorage.getItem(getHistoryKey())) || [];
 
     if (history.length === 0) {
         list.innerHTML = '<li class="history-empty">No history yet.</li>';
@@ -313,12 +363,27 @@ function loadHistory() {
     list.innerHTML = history.map((item, index) => {
         const text = typeof item === 'string' ? item : item.text;
         const displayText = text.substring(0, 30) + '...';
-        return `<li onclick="loadFromHistory(${index})" title="${text.substring(0, 80)}">${displayText}</li>`;
+        return `
+            <li class="history-item" style="display:flex; justify-content:space-between; align-items:center;">
+                <span onclick="loadFromHistory(${index})" title="${text.substring(0, 80)}" style="cursor:pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayText}</span>
+                <span onclick="deleteHistoryItem(${index}); event.stopPropagation();" title="Delete chat" style="cursor:pointer; font-size:1.2rem; padding-left:10px; opacity:0.6;">🗑️</span>
+            </li>
+        `;
     }).join('');
 }
 
+function deleteHistoryItem(index) {
+    if (confirm("Delete this specific chat?")) {
+        let history = JSON.parse(localStorage.getItem(getHistoryKey())) || [];
+        history.splice(index, 1);
+        localStorage.setItem(getHistoryKey(), JSON.stringify(history));
+        loadHistory();
+        syncHistoryToDB();
+    }
+}
+
 function loadFromHistory(index) {
-    const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    const history = JSON.parse(localStorage.getItem(getHistoryKey())) || [];
     const item = history[index];
     if (!item) return;
 
@@ -337,8 +402,8 @@ function loadFromHistory(index) {
 }
 
 function clearHistory() {
-    if (confirm("Are you sure you want to delete your chat history?")) {
-        localStorage.removeItem('chatHistory');
+    if (confirm("Are you sure you want to delete your entire chat history?")) {
+        localStorage.removeItem(getHistoryKey());
         loadHistory();
         syncHistoryToDB();
     }
@@ -354,7 +419,7 @@ async function syncHistoryToDB() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
                 token: token, 
-                chat_history: localStorage.getItem('chatHistory') || '[]' 
+                chat_history: localStorage.getItem(getHistoryKey()) || '[]' 
             })
         });
     } catch(e) { console.log('History sync failed', e); }
