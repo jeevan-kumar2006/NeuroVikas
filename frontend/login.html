@@ -1,209 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | DIFFERENT IDEA</title>
-
-    <!-- Styles -->
+    <title>Login | NeuroVikas</title>
     <link rel="stylesheet" href="login.css">
-
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-<!-- ================= LOGIN CONTAINER ================= -->
+    <div class="login-container">
+        <div class="brand-panel">
+            <div class="brand-content">
+                <h1>NeuroVikas</h1>
+                <p>Education designed for every mind.</p>
+            </div>
+        </div>
 
-<div class="login-container">
+        <div class="form-panel">
+            <div class="form-wrapper">
+                <div class="mobile-logo">NeuroVikas</div>
+                
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Log in to access your personalized dashboard.</p>
 
-    <!-- Brand Panel -->
-    <div class="brand-panel">
-        <div class="brand-content">
-            <h1>NeuroVikas</h1>
-            <p id="typing-text"></p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" placeholder="name@example.com" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="options-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Log In</button>
+                    
+                    <div class="divider"><span>or</span></div>
+
+                    <a href="signup.html" class="btn btn-outline btn-full">
+                        Create an Account
+                    </a>
+                    <br>
+                    <a href="index.html" class="btn btn-outline btn-full" style="background:#f5f5f5; color:#666; border-color:#ddd;">
+                        Continue as Guest
+                    </a>
+                </form>
+            </div>
         </div>
     </div>
-
-    <!-- Form Panel -->
-    <div class="form-panel">
-        <div class="form-wrapper">
-
-            <div class="mobile-logo">DIFFERENT IDEA</div>
-
-            <h2>Welcome Back</h2>
-            <p class="subtitle">Log in to access your personalized dashboard.</p>
-
-            <!-- Login Form -->
-            <form id="login-form">
-
-                <div class="input-group">
-                    <label for="email">Email Address</label>
-                    <input 
-                        type="email"
-                        id="email"
-                        placeholder="name@example.com"
-                        required
-                    >
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Enter your password"
-                        required
-                    >
-                </div>
-
-                <!-- Remember + Forgot -->
-                <div class="options-row">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="remember">
-                        <span>Remember me</span>
-                    </label>
-
-                    <a href="#" class="forgot-link">Forgot Password?</a>
-                </div>
-
-                <!-- Login Button -->
-                <button type="submit" class="btn btn-primary btn-full">
-                    Log In
-                </button>
-
-                <!-- Divider -->
-                <div class="divider">
-                    <span>or</span>
-                </div>
-
-                <!-- Signup Button -->
-                <a href="signup.html" class="btn btn-outline btn-full">
-                    Create an Account
-                </a>
-
-                <br>
-
-                <!-- Guest Button -->
-                <a 
-                    href="index.html"
-                    class="btn btn-outline btn-full"
-                    style="background:#f5f5f5; color:#666; border-color:#ddd;"
-                >
-                    Continue as Guest
-                </a>
-
-            </form>
-
-        </div>
-    </div>
-
-</div>
-
-<!-- ================= JAVASCRIPT ================= -->
 
 <script>
-
-/* ================= API URL DETECTION ================= */
-
-const getApiUrl = () => {
-
-    // Local development
-    if (
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname === 'localhost'
-    ) {
+    const getApiUrl = () => {
+    // 1. Local VS Code Development or Direct File Access
+    if (window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '') {
         return "http://127.0.0.1:5000";
     }
 
-    // GitHub Codespaces
+    // 2. GitHub Codespaces Logic
     if (window.location.hostname.includes('app.github.dev')) {
-
         let host = window.location.hostname;
-
-        return `https://${host.replace(/-\d+/, '-5000')}`;
+        return `https://${host.replace(/-\d+/, '-5000')}`; 
     }
 
-    // Fallback
+    // 3. Fallback (if deployed normally)
     return window.location.origin;
 };
-
 const API_URL = getApiUrl();
 
+    const loginForm = document.getElementById('login-form');
 
-/* ================= LOGIN FORM ================= */
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // This can be either email or username
+        const login_id = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-const loginForm = document.getElementById('login-form');
+        try {
+            const response = await fetch(`${API_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: login_id, password: password })
+            });
 
-loginForm.addEventListener('submit', async (e) => {
+            const data = await response.json();
 
-    e.preventDefault();
-
-    const login_id = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    try {
-
-        const response = await fetch(`${API_URL}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: login_id,
-                password: password
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            localStorage.setItem('currentUser', data.user);
-            localStorage.setItem('userEmail', data.email);
-            localStorage.setItem('userStreak', data.streak);
-            localStorage.setItem('userTime', data.total_time);
-            localStorage.setItem('authToken', data.token);
-
-            window.location.href = "dashboard.html";
-
-        } else {
-
-            alert(data.message);
-
+            if (data.success) {
+                localStorage.setItem('currentUser', data.user); // Username
+                localStorage.setItem('userEmail', data.email);   // Email
+                localStorage.setItem('userStreak', data.streak);
+                localStorage.setItem('userTime', data.total_time);
+                localStorage.setItem('authToken', data.token);
+                
+                window.location.href = "dashboard.html";
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Server connection error.");
         }
-
-    } catch (error) {
-
-        console.error("Error:", error);
-        alert("Server connection error.");
-
-    }
-
-});
-
-
-/* ================= TYPING EFFECT ================= */
-
-const text = "Education designed for every mind.";
-let index = 0;
-
-function typeEffect() {
-
-    if (index < text.length) {
-
-        document.getElementById("typing-text").innerHTML += text.charAt(index);
-
-        index++;
-
-        setTimeout(typeEffect, 40);
-    }
-
-}
-
-window.onload = typeEffect;
-
+    });
 </script>
-
+    
 </body>
 </html>
