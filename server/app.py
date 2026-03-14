@@ -12,6 +12,8 @@ from werkzeug.utils import secure_filename
 try:
     from PIL import Image
     import pytesseract
+    if os.name == 'nt':
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     OCR_SUPPORT = True
 except ImportError:
     OCR_SUPPORT = False
@@ -255,7 +257,10 @@ def upload_file():
             extracted_text = re.sub(r'\s+', ' ', extracted_text).strip()
             if not extracted_text: return jsonify({"success": False, "message": "Empty content"}), 400
             return jsonify({"success": True, "text": extracted_text})
-        except Exception as e: return jsonify({"success": False, "message": str(e)}), 500
+        except Exception as e:
+            if "tesseract" in str(e).lower() or "not in your path" in str(e).lower():
+                return jsonify({"success": False, "message": "Tesseract OCR is not installed on this system. Please install Tesseract to use image uploads."}), 400
+            return jsonify({"success": False, "message": str(e)}), 500
     return jsonify({"success": False, "message": "Invalid file"}), 400
 
 # --- ANALYSIS & EXPORT ---
@@ -273,10 +278,69 @@ def analyze_text_logic(text):
 def analyze():
     return jsonify(analyze_text_logic(request.json.get('text', '')))
 
+# --- KEYWORD & ACTION ITEM EXTRACTION ---
+# Common English stop-words to filter out
+STOP_WORDS = set([
+    'the','a','an','and','or','but','in','on','at','to','for','of','with',
+    'by','from','is','was','are','were','be','been','being','have','has','had',
+    'do','does','did','will','would','could','should','may','might','shall',
+    'it','its','this','that','these','those','i','we','you','he','she','they',
+    'me','us','him','her','them','my','our','your','his','our','their',
+    'what','which','who','how','when','where','why','if','so','as','not',
+    'also','then','than','into','can','just','more','about','after','before',
+    'up','out','all','any','some','such','other','new','because','through'
+])
+
+# Action-item signal words (imperative verbs common in academic/study text)
+ACTION_VERBS = [
+    'analyze','analyse','compare','contrast','define','describe','discuss',
+    'evaluate','examine','explain','identify','illustrate','interpret',
+    'justify','list','outline','prove','review','state','summarize',
+    'assess','calculate','classify','create','demonstrate','determine',
+    'develop','differentiate','distinguish','estimate','investigate',
+    'justify','measure','observe','predict','present','propose',
+    'recommend','relate','select','show','solve','support','trace'
+]
+
+def extract_keywords(text, top_n=10):
+    """Extract top-N important keywords using word frequency (stop-word filtered)."""
+    words = re.findall(r'\b[a-zA-Z]{4,}\b', text.lower())
+    freq = {}
+    for w in words:
+        if w not in STOP_WORDS:
+            freq[w] = freq.get(w, 0) + 1
+    sorted_words = sorted(freq, key=lambda x: freq[x], reverse=True)
+    return sorted_words[:top_n]
+
+def extract_action_items(text):
+    """Find sentences that start with or contain action verbs."""
+    sentences = re.split(r'[.!?।]', text)
+    action_phrases = []
+    pattern = re.compile(r'\b(' + '|'.join(ACTION_VERBS) + r')\b', re.IGNORECASE)
+    for sent in sentences:
+        sent = sent.strip()
+        if sent and pattern.search(sent):
+            # Grab the matched verb + surrounding words as a short phrase
+            match = pattern.search(sent)
+            start = max(0, match.start() - 0)
+            phrase = sent[start:start+60].strip()
+            if len(phrase) > 5:
+                action_phrases.append(phrase)
+    return action_phrases[:8]  # Return max 8 action items
+
+@app.route('/api/keywords', methods=['POST'])
+def keywords():
+    text = request.json.get('text', '')
+    if not text:
+        return jsonify({"keywords": [], "action_items": []})
+    kw = extract_keywords(text, top_n=12)
+    ai = extract_action_items(text)
+    return jsonify({"keywords": kw, "action_items": ai})
+
 @app.route('/api/simplify', methods=['POST'])
 def simplify():
     text = request.json.get('text', '')
-    summary = [s.strip() for s in re.split(r'[.!?]', text) if s.strip()][:3]
+    summary = [s.strip() for s in re.split(r'[.!?।]', text) if s.strip()][:3]
     return jsonify({"summary": summary})
 
 @app.route('/api/export-pdf', methods=['POST'])
