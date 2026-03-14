@@ -12,6 +12,8 @@ from werkzeug.utils import secure_filename
 try:
     from PIL import Image
     import pytesseract
+    if os.name == 'nt':
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     OCR_SUPPORT = True
 except ImportError:
     OCR_SUPPORT = False
