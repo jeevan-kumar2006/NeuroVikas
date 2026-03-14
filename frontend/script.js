@@ -432,18 +432,31 @@ function toggleFocusMask(isActive) {
     }
 }
 
+let isMaskTicking = false;
+let maskMouseY = 0;
+
 function moveFocusMask(e) {
+    maskMouseY = e.clientY;
+    if (!isMaskTicking) {
+        window.requestAnimationFrame(() => {
+            updateFocusMaskPosition();
+            isMaskTicking = false;
+        });
+        isMaskTicking = true;
+    }
+}
+
+function updateFocusMaskPosition() {
     const rulerHeight = 120; // bright ruler band height in px
     const halfRuler = rulerHeight / 2;
-    const mouseY = e.clientY;
     const windowH = window.innerHeight;
 
     // Top dark slab: from top to (mouseY - halfRuler)
-    const topH = Math.max(0, mouseY - halfRuler);
+    const topH = Math.max(0, maskMouseY - halfRuler);
     focusMaskTop.style.height = topH + 'px';
 
     // Bottom dark slab: from (mouseY + halfRuler) to bottom
-    const bottomTop = Math.min(windowH, mouseY + halfRuler);
+    const bottomTop = Math.min(windowH, maskMouseY + halfRuler);
     const bottomH = Math.max(0, windowH - bottomTop);
     focusMaskBottom.style.top = 'auto';
     focusMaskBottom.style.height = bottomH + 'px';
