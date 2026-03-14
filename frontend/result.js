@@ -20,7 +20,9 @@ const getApiUrl = () => {
 };
 const API_URL = getApiUrl();
 
-let state = { mode: 'default', bionicActive: false };
+let state = { mode: 'default', bionicActive: false, keywords: [], actionItems: [], chunkActive: false };
+
+
 
 // Elements
 const body = document.body;
@@ -32,13 +34,12 @@ const distressModal = document.getElementById('distress-modal');
 // ==========================================
 // INITIALIZATION
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const resultData = sessionStorage.getItem('currentResult');
     
     // --- Load User & History ---
     const user = localStorage.getItem('currentUser');
     if (user) {
-        // Update Sidebar Username
         const sidebarUser = document.getElementById('sidebar-username');
         if (sidebarUser) sidebarUser.innerText = user;
     }
@@ -55,9 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render UI
     document.getElementById('meta-time').innerText = Math.ceil(data.wordCount / 200) + " min read";
     document.getElementById('meta-complexity').innerText = data.complexity;
+
+    // Fetch keywords & action items from backend
+    try {
+        const kwRes = await fetch(`${API_URL}/api/keywords`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: data.originalText })
+        });
+        if (kwRes.ok) {
+            const kwData = await kwRes.json();
+            state.keywords    = kwData.keywords    || [];
+            state.actionItems = kwData.action_items || [];
+        }
+    } catch(e) { console.log('Keyword fetch failed', e); }
+
     renderContent(data.originalText, data.summaryPoints);
     
-    // Apply User's Preferred Mode instead of forcing Recommendations
+    // Apply User's Preferred Mode
     const savedMode = localStorage.getItem('preferredMode') || 'default';
     setMode(savedMode);
 });
@@ -65,18 +81,114 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // CONTENT RENDERING
 // ==========================================
+// ==========================================
+// KEYWORD HIGHLIGHTING
+// ==========================================
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function applyKeywordHighlights(text) {
+    if (!state.keywords.length && !state.actionItems.length) return text;
+
+    // Build action-item regex (green underline)
+    let result = text;
+    state.actionItems.forEach(phrase => {
+        const safe = escapeRegex(phrase.substring(0, 40));
+        const re = new RegExp(`(${safe})`, 'gi');
+        result = result.replace(re, `<mark class="action-item-highlight" title="Action Item">$1</mark>`);
+    });
+
+    // Build keyword regex (yellow highlight) — whole word match
+    state.keywords.forEach(kw => {
+        const safe = escapeRegex(kw);
+        const re = new RegExp(`\\b(${safe})\\b`, 'gi');
+        result = result.replace(re, `<mark class="keyword-highlight" title="Key Term: ${kw}">$1</mark>`);
+    });
+    return result;
+}
+
+function buildKeywordLegend() {
+    if (!state.keywords.length && !state.actionItems.length) return '';
+    const kwList = state.keywords.slice(0, 6).join(', ');
+    return `<div class="keyword-legend">
+        <span><span class="legend-swatch" style="background:rgba(255,220,60,0.7);"></span><strong>Keywords:</strong> ${kwList}</span>
+        <span><span class="legend-swatch" style="background:rgba(100,210,140,0.6);border-bottom:2px solid rgba(50,180,100,0.8);"></span><strong>Action Items</strong></span>
+    </div>`;
+}
+
+// ==========================================
+// ADHD CHUNKING
+// ==========================================
+function applyAdhdChunking(container) {
+    if (state.chunkActive) return;  // already chunked
+    state.chunkActive = true;
+    const paras = Array.from(container.querySelectorAll('p'));
+    if (!paras.length) return;
+
+    // Split each paragraph into 2–3 sentence chunks
+    const allChunks = [];
+    paras.forEach(para => {
+        const text = para.innerHTML;  // keep highlight markup
+        const sentences = text.split(/(?<=[.!?])\s+/);
+        // Group every 2 sentences into a chunk
+        const CHUNK_SIZE = 2;
+        for (let i = 0; i < sentences.length; i += CHUNK_SIZE) {
+            const chunk = sentences.slice(i, i + CHUNK_SIZE).join(' ').trim();
+            if (chunk) allChunks.push(chunk);
+        }
+    });
+
+    container.innerHTML = `<div class="adhd-chunk-wrapper">${
+        allChunks.map((chunk, idx) => `
+            <div class="adhd-chunk" tabindex="0">
+                <div class="chunk-number">Part ${idx + 1} of ${allChunks.length}</div>
+                <p style="margin:0;">${chunk}</p>
+            </div>`
+        ).join('')
+    }</div>`;
+
+    // Highlight chunk on focus/click
+    container.querySelectorAll('.adhd-chunk').forEach(card => {
+        card.addEventListener('focus', () => {
+            container.querySelectorAll('.adhd-chunk').forEach(c => c.classList.remove('active-chunk'));
+            card.classList.add('active-chunk');
+        });
+        card.addEventListener('click', () => card.focus());
+    });
+}
+
+function removeAdhdChunking(container, text, summaryPoints) {
+    if (!state.chunkActive) return;
+    state.chunkActive = false;
+    // Re-render paragraphs normally
+    container.innerHTML = buildKeywordLegend();
+    const paragraphs = text ? text.split(/\n\n+/) : [];
+    paragraphs.forEach(p => {
+        const para = document.createElement('p');
+        para.innerHTML = applyKeywordHighlights(p);
+        container.appendChild(para);
+    });
+}
+
 function renderContent(text, summaryPoints) {
     const academicDiv = document.getElementById('content-academic');
-    academicDiv.innerHTML = '';
+    academicDiv.innerHTML = buildKeywordLegend();
     const paragraphs = text.split(/\n\n+/);
     paragraphs.forEach(p => {
         const para = document.createElement('p');
-        para.textContent = p;
+        para.innerHTML = applyKeywordHighlights(p);
         academicDiv.appendChild(para);
     });
 
+    // Re-apply chunking if already in ADHD mode
+    if (state.mode === 'adhd') {
+        state.chunkActive = false;
+        applyAdhdChunking(academicDiv);
+    }
+
     const simplifiedDiv = document.getElementById('content-simplified');
-    let listItems = summaryPoints.map(s => `<li>${s}</li>`).join('');
+    let listItems = summaryPoints.map(s => `<li>${applyKeywordHighlights(s)}</li>`).join('');
     simplifiedDiv.innerHTML = '<h3>AI Generated Summary</h3><ul>' + listItems + '</ul>';
 }
 
@@ -88,20 +200,21 @@ function setMode(mode) {
     document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
     const modeBtn = document.getElementById(`btn-${mode}`);
     if (modeBtn) modeBtn.classList.add('active');
+
+    const prevMode = state.mode;
     state.mode = mode;
 
     const bionicToggle = document.getElementById('toggle-bionic');
     const focusToggle  = document.getElementById('toggle-focus');
     const adhdExitBtn  = document.getElementById('adhd-exit-btn');
+    const academicDiv  = document.getElementById('content-academic');
 
     // --- Dyslexia Mode ---
     if (mode === 'dyslexia') {
         body.classList.add('mode-dyslexia');
-        // Always force Bionic Reading ON
         if (bionicToggle) { bionicToggle.checked = true; }
         toggleBionic(true);
     } else {
-        // Turn Bionic Reading OFF when leaving dyslexia
         if (bionicToggle) { bionicToggle.checked = false; }
         toggleBionic(false);
     }
@@ -109,15 +222,25 @@ function setMode(mode) {
     // --- ADHD Mode ---
     if (mode === 'adhd') {
         body.classList.add('mode-adhd');
-        // Always force Focus Mask ON
         if (focusToggle) { focusToggle.checked = true; }
         toggleFocusMask(true);
         if (adhdExitBtn) adhdExitBtn.classList.remove('hidden');
+        // Apply text chunking
+        if (academicDiv && !state.chunkActive) {
+            applyAdhdChunking(academicDiv);
+        }
     } else {
-        // Turn Focus Mask OFF when leaving adhd
         if (focusToggle) { focusToggle.checked = false; }
         toggleFocusMask(false);
         if (adhdExitBtn) adhdExitBtn.classList.add('hidden');
+        // Remove chunking if we're leaving ADHD mode
+        if (prevMode === 'adhd' && academicDiv && state.chunkActive) {
+            const resultData = sessionStorage.getItem('currentResult');
+            if (resultData) {
+                const data = JSON.parse(resultData);
+                removeAdhdChunking(academicDiv, data.originalText, data.summaryPoints);
+            }
+        }
     }
 
     localStorage.setItem('preferredMode', mode);
